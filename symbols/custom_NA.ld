@@ -18,3 +18,4 @@ FUN_022fb538 = 0x022fb538;
 FUN_022e4964 = 0x022e4964;
 HideMinimap = 0x0234d558;
 MinimapRelated = 0x022EA428;
+DrawHorizontalLine = 0x02025D50;

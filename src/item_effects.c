@@ -2,6 +2,7 @@
 #include <cot.h>
 
 #include "common.h"
+#include "extern.h"
 
 static void ShowMinimap() {
   MinimapRelated(0, 0);
@@ -62,10 +63,15 @@ struct advanced_menu_layout {
 
 // This has to be a global variable to make it accessible in `MenuEntryFn`
 static struct monster* ether_target_monster;
+static int ether_menu_id;
 
 static char* MenuEntryFn(char* string_buffer, int option_num) {
   struct move* move = &ether_target_monster->moves[option_num];
   char* move_name = GetMoveName(move->id.val);
+
+  if (option_num != 0) {
+    DrawHorizontalLine(ether_menu_id, 12, option_num * 14 + 14, 130, 0x17);
+  }
 
   Sprintf(string_buffer, "[CS:K]%s[CLUM_SET:111]%2d[CLUM_SET:123]/[CLUM_SET:128]%2d[CR]", move_name, move->pp, GetMaxPp(move));
   return string_buffer;
@@ -118,6 +124,7 @@ static void ItemEther(struct entity* user, struct entity* target) {
 
     int flags_int = *(int*) &flags;
     int menu_id = CreateAdvancedMenu((undefined*) &layout, flags_int, (undefined*) &additional_info, (undefined*) MenuEntryFn, active_move_count, active_move_count);
+    ether_menu_id = menu_id;
     while (IsAdvancedMenuActive(menu_id)) {
       AdvanceFrame(0);
     }
