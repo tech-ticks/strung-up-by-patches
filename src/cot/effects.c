@@ -19,12 +19,12 @@ bool cotInternalDispatchApplyItemEffect(
     return handled;
 }
 
-bool cotInternalDispatchApplyMoveEffect(
+bool cotInternalDispatchExecuteMoveEffect(
         move_effect_input* data, struct entity* user, struct entity* target, struct move* move
 ) {
     COT_LOGFMT(COT_LOG_CAT_EFFECTS, "Running move effect %d", data->move_id);
 
-    bool handled = CustomApplyMoveEffect(data, user, target, move);
+    bool handled = CustomExecuteMoveEffect(data, user, target, move);
 #ifdef COT_RUST
     // If the Rust runtime of c-of-time is used, ask the Rust implementation to process the effect.
     if (!handled) {

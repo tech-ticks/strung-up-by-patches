@@ -1,7 +1,7 @@
 /* !file overlay29 */
-/* ApplyMoveEffect = ?????; unknown */
-ApplyMoveEffectHookAddr = 0x023302E4;
-ApplyMoveEffectJumpAddr = 0x0233310C;
+/* ExecuteMoveEffect = ?????; unknown */
+ExecuteMoveEffectHookAddr = 0x023302E4;
+ExecuteMoveEffectJumpAddr = 0x0233310C;
 ApplyItemEffectHookAddr = 0x0231C434;
 ApplyItemEffectJumpAddr = 0x0231D574;
 

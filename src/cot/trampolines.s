@@ -36,7 +36,7 @@ cotInternalTrampolineApplyItemEffect:
   b ApplyItemEffectHookAddr+4
 
 .align 4
-cotInternalTrampolineApplyMoveEffect:
+cotInternalTrampolineExecuteMoveEffect:
   // Backup registers
   push {r0-r9, r11, r12}
 
@@ -52,7 +52,7 @@ cotInternalTrampolineApplyMoveEffect:
   mov r1, r9
   mov r2, r4
   mov r3, r8
-  bl cotInternalDispatchApplyMoveEffect
+  bl cotInternalDispatchExecuteMoveEffect
 
   // Check if true was returned
   cmp r0, #1
@@ -62,13 +62,13 @@ cotInternalTrampolineApplyMoveEffect:
   ldreq r10, =move_effect_input_out_dealt_damage
 
   // If yes, exit the original function
-  beq ApplyMoveEffectJumpAddr
+  beq ExecuteMoveEffectJumpAddr
 
   pop {r0-r9, r11, r12}
 
   // Restore the instruction that was replaced with the patch and call the original function
   mov r1, #0x1
-  b ApplyMoveEffectHookAddr+4
+  b ExecuteMoveEffectHookAddr+4
 
 .align 4
 move_effect_input:

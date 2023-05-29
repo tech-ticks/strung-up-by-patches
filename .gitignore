@@ -6,6 +6,8 @@ out.elf
 out.asm
 
 *.nds
+*.sav
+*.ml*
 *.nds.skytemple
 
 symbols/generated_*.ld
