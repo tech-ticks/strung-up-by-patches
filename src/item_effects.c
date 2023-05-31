@@ -14,38 +14,38 @@ struct advanced_menu_flags {
   bool accept_button: 1;
   bool up_down_buttons: 1;
   bool se_on: 1;
-  bool unknown_5: 1;
+  bool set_choice: 1;
   bool unknown_6: 1;
   bool unknown_7: 1;
   bool unknown_8: 1;
   bool broken_first_choice: 1;
-  bool broken_menu: 1;
+  bool custom_height: 1;
   bool menu_title: 1;
   bool menu_lower_bar: 1;
   bool list_button: 1;
   bool search_button: 1;
   bool unknown_15: 1;
-  bool unknown_16: 1;
-  bool unknown_17: 1;
+  bool first_last_page_buttons: 1;
+  bool up_down: 1;
   bool unknown_18: 1;
   bool unknown_19: 1;
   bool y_pos_end: 1;
   bool x_pos_end: 1;
   bool partial_menu: 1;
   bool no_cursor: 1;
-  bool unknown_24: 1;
-  bool unknown_25: 1;
-  bool unknown_26: 1;
-  bool unknown_27: 1;
-  bool unknown_28: 1;
+  bool no_up_down: 1;
+  bool no_left_right: 1;
+  bool invisible_cursor: 1;
+  bool only_list: 1;
+  bool no_accept_button: 1;
   bool unknown_29: 1;
   bool unknown_30: 1;
   bool unknown_31: 1;
 };
 
 struct advanced_menu_additional_info {
-  int unknown_0;
-  int unknown_4;
+  int header_height;
+  int item_height;
   int string_id;
   int unknown_12;
 };
@@ -62,15 +62,17 @@ struct advanced_menu_layout {
 };
 
 // This has to be a global variable to make it accessible in `MenuEntryFn`
-static struct monster* ether_target_monster;
-static int ether_menu_id;
+static struct ether_menu_state {
+  struct monster* target_monster;
+  int menu_id;
+} ether_menu_state;
 
 static char* MenuEntryFn(char* string_buffer, int option_num) {
-  struct move* move = &ether_target_monster->moves[option_num];
+  struct move* move = &ether_menu_state.target_monster->moves[option_num];
   char* move_name = GetMoveName(move->id.val);
 
-  if (option_num != 0) {
-    DrawHorizontalLine(ether_menu_id, 12, option_num * 14 + 14, 130, 0x17);
+  if (ether_menu_state.menu_id >= 0 && option_num != 0) {
+    DrawHorizontalLine(ether_menu_state.menu_id, 12, option_num * 16 + 14, 130, 0x17);
   }
 
   Sprintf(string_buffer, "[CS:K]%s[CLUM_SET:111]%2d[CLUM_SET:123]/[CLUM_SET:128]%2d[CR]", move_name, move->pp, GetMaxPp(move));
@@ -85,7 +87,7 @@ static void ItemEther(struct entity* user, struct entity* target) {
   int move_index = 0;
 
   struct monster* user_monster = user->info;
-  ether_target_monster = target->info;
+  struct monster* target_monster = target->info;
 
   if (!user_monster->is_not_team_member) {
     // If an ally is using the item, show a menu to select a move.
@@ -96,18 +98,19 @@ static void ItemEther(struct entity* user, struct entity* target) {
 
     int active_move_count = 0;
     for (int i = 0; i < 4; i++) {
-      if (ether_target_monster->moves[i].f_exists) {
+      if (target_monster->moves[i].f_exists) {
         active_move_count++;
       }
     }
 
     struct advanced_menu_flags flags = {
       .a_accept = true,
-      .menu_title = true
+      .menu_title = true,
+      .custom_height = true,
     };
   
     struct advanced_menu_additional_info additional_info = {
-      .unknown_4 = 0x10,
+      .item_height = 16,
       .string_id = 387, // "Restore PP of which move?"
       .unknown_12 = 0x10
     };
@@ -123,26 +126,31 @@ static void ItemEther(struct entity* user, struct entity* target) {
     };
 
     int flags_int = *(int*) &flags;
+    // The target monster is accessed in `MenuEntryFn`, which is called by `CreateAdvancedMenu` and later
+    ether_menu_state.target_monster = target_monster;
+
     int menu_id = CreateAdvancedMenu((undefined*) &layout, flags_int, (undefined*) &additional_info, (undefined*) MenuEntryFn, active_move_count, active_move_count);
-    ether_menu_id = menu_id;
+    ether_menu_state.menu_id = menu_id; // Save the menu ID to draw lines in the menu
     while (IsAdvancedMenuActive(menu_id)) {
       AdvanceFrame(0);
     }
     move_index = GetAdvancedMenuResult(menu_id);
 
     FreeAdvancedMenu(menu_id);
+    ether_menu_state.menu_id = -1;
+    ether_menu_state.target_monster = NULL;
 
     AdvanceFrame(0);
     AdvanceFrame(0);
     ShowMinimap();
   } else {
     // Not any ally, select the move with the lowest PP
-    int lowest_pp = ether_target_monster->moves[0].pp;
+    int lowest_pp = target_monster->moves[0].pp;
     int lowest_pp_move_index = 0;
 
     for (int i = 1; i <= 4; i++) {
-      int pp = ether_target_monster->moves[i].pp;
-      if (pp < lowest_pp && pp < GetMaxPp(&ether_target_monster->moves[i])) {
+      int pp = target_monster->moves[i].pp;
+      if (pp < lowest_pp && pp < GetMaxPp(&target_monster->moves[i])) {
         lowest_pp = pp;
         lowest_pp_move_index = i;
       }
@@ -152,7 +160,7 @@ static void ItemEther(struct entity* user, struct entity* target) {
   }
 
   if (move_index >= 0 && move_index <= 4) {
-    struct move* move = &ether_target_monster->moves[move_index];
+    struct move* move = &target_monster->moves[move_index];
     int max_pp = GetMaxPp(move);
     int new_pp = move->pp + 10;
     if (new_pp > max_pp) {
