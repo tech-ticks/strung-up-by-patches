@@ -65,7 +65,10 @@ struct advanced_menu_layout {
 static struct ether_menu_state {
   struct monster* target_monster;
   int menu_id;
-} ether_menu_state;
+} ether_menu_state = {
+  .target_monster = NULL,
+  .menu_id = -1,
+};
 
 static char* MenuEntryFn(char* string_buffer, int option_num) {
   struct move* move = &ether_menu_state.target_monster->moves[option_num];
