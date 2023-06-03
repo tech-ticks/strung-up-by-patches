@@ -1,11 +1,11 @@
 OUTPUT_ARCH(arm)
 MEMORY {
-        out     : ORIGIN = 0x23D7FF0, LENGTH = 0x8010
+        out     : ORIGIN = 0x23dd550, LENGTH = 0x2AAC
 }
 
 SECTIONS {
         .text : {
-
+                
                 FILL (0xABCD)
 
                 __exidx_start = .;

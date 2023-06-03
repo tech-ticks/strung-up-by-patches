@@ -10,7 +10,7 @@ GBA_JOYPAD_KEYS = 0x4000130;
 /* !file overlay29 */
 ExecuteMoveEffectHookAddr = 0x0232F8A4;
 ExecuteMoveEffectJumpAddr = 0x023326CC;
-ApplyItemEffectHookAddr = 0x0231B9D8;
+ApplyItemEffectHookAddr = 0x0231b9ac;
 ApplyItemEffectJumpAddr = 0x0231CB14;
 RunMonsterAiCallSite = 0x022ebe88;
 RunMonsterAiCallSite2 = 0x022ec18c;

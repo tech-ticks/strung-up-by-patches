@@ -81,7 +81,7 @@ To extend the allocated space, open `linker.ld` and edit the following line:
 out     : ORIGIN = 0x23D7FF0, LENGTH = 0x8010
 ```
 
-Subtract the amount of additional bytes you want to allocate from `ORIGIN` and add them to `LENGTH`. Next, open `patches/patch.py` and set `START_ADDRESS` of the top of the file to the same value as `ORIGIN` in the linker script.
+Subtract the amount of additional bytes you want to allocate from `ORIGIN` and add them to `LENGTH`. Next, open `patches/patch.py` and set `START_ADDRESS` of the top of the file to the same value as `ORIGIN` in the linker script. **Note that the resulting address must be aligned to 16 (`ORIGIN % 16 == 0`).**
 
 ### Optimizing for size
 You can also change the compiler flags to optimize for size instead of speed. To do so, set `OPT_LEVEL := Os` in `Makefile`. Effectiveness varies per project.

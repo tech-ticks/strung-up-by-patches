@@ -5,5 +5,5 @@ ScriptSpecialProcessCall+0:
 ApplyItemEffectHookAddr+0:
   B cotInternalTrampolineApplyItemEffect
 
-ExecuteMoveEffectHookAddr+0:
-  B cotInternalTrampolineExecuteMoveEffect
+//ExecuteMoveEffectHookAddr+0:
+//  B cotInternalTrampolineExecuteMoveEffect

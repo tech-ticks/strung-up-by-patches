@@ -32,7 +32,7 @@ cotInternalTrampolineApplyItemEffect:
   pop {r0-r9, r11, r12}
 
   // Restore the instruction that was replaced with the patch and call the original function
-  cmp r0, #0
+  stmdb  r13!,{r5,r6,r7,r8} // This is an instruction from the "ExtractItemCode" patch
   b ApplyItemEffectHookAddr+4
 
 .align 4

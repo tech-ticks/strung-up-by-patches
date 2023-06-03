@@ -114,7 +114,7 @@ static void ItemEther(struct entity* user, struct entity* target) {
   
     struct advanced_menu_additional_info additional_info = {
       .item_height = 16,
-      .string_id = 387, // "Restore PP of which move?"
+      .string_id = 17901, // "Restore PP of which move?"
       .unknown_12 = 0x10
     };
 
@@ -151,7 +151,7 @@ static void ItemEther(struct entity* user, struct entity* target) {
     int lowest_pp = target_monster->moves[0].pp;
     int lowest_pp_move_index = 0;
 
-    for (int i = 1; i <= 4; i++) {
+    for (int i = 1; i < 4; i++) {
       int pp = target_monster->moves[i].pp;
       if (pp < lowest_pp && pp < GetMaxPp(&target_monster->moves[i])) {
         lowest_pp = pp;

@@ -9,7 +9,7 @@ static void RunMonsterAiYoullAlwaysFindMe(struct entity* entity, struct monster*
     return;
   }
 
-  if (GetChebyshevDistance(&entity->pos, &leader->pos) <= 2) {
+  if (GetChebyshevDistance(&entity->pos, &leader->pos) <= 1) {
     // Use the normal AI if the player is adjacent to Amber
     return RunMonsterAi(entity, param_2);
   }
@@ -44,13 +44,13 @@ static void RunMonsterAiRockSmash(struct entity* entity, struct monster* monster
   if (TryRockSmashTile(monster, move_index, entity->pos.x + 1, entity->pos.y, DIR_RIGHT)) {
     return;
   }
-  if (TryRockSmashTile(monster,  move_index, entity->pos.x - 1, entity->pos.y, DIR_LEFT)) {
+  if (TryRockSmashTile(monster, move_index, entity->pos.x - 1, entity->pos.y, DIR_LEFT)) {
     return;
   }
-  if (TryRockSmashTile(monster,  move_index, entity->pos.x, entity->pos.y - 1, DIR_UP)) {
+  if (TryRockSmashTile(monster, move_index, entity->pos.x, entity->pos.y - 1, DIR_UP)) {
     return;
   }
-  if (TryRockSmashTile(monster,  move_index, entity->pos.x, entity->pos.y + 1, DIR_DOWN)) {
+  if (TryRockSmashTile(monster, move_index, entity->pos.x, entity->pos.y + 1, DIR_DOWN)) {
     return;
   }
 
@@ -58,6 +58,9 @@ static void RunMonsterAiRockSmash(struct entity* entity, struct monster* monster
 }
 
 void CustomRunMonsterAi(struct entity* entity, undefined param_2) {
+  if (!IsMonster(entity)) {
+    return;
+  }
   struct monster* monster = entity->info;
 
   if (monster->tactic.val == TACTIC_GROUP_SAFETY) { // You'll always find me
@@ -78,7 +81,7 @@ void CustomRunMonsterAi(struct entity* entity, undefined param_2) {
 }
 
 bool ShouldUseLayoutWithoutHallways() {
-  return DUNGEON_PTR->id.val == DUNGEON_DRENCHED_BLUFF && DUNGEON_PTR->floor == 1;
+  return DUNGEON_PTR->id.val == DUNGEON_DESTINY_TOWER && DUNGEON_PTR->floor == 99;
 }
 
 void HookCreateHallway(int x0, int y0, int x1, int y1, bool vertical, int x_mid, int y_mid) {

@@ -12,7 +12,7 @@ OVERLAY_INDEX = 36
 
 # Overlay load address + offset to common area
 # see https://docs.google.com/document/d/1Rs4icdYtiM6KYnWxMkdlw7jpWrH7qw5v6LOfDWIiYho
-START_ADDRESS = 0x23D7FF0 
+START_ADDRESS = 0x23dd550
 
 region = sys.argv[1]
 rom_path = sys.argv[2]
