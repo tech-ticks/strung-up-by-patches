@@ -20,6 +20,12 @@ static void SpSetPartnerTacticGroupSafety() {
   ground_monster_partner->tactic.val = TACTIC_GROUP_SAFETY;
 }
 
+// SP 101: Reset dungeon-related script engine globals
+void SpResetDungeonGlobals() {
+  SaveScriptVariableValue(NULL, VAR_PP_ZERO_TRAP_SPAWN_FAILED, 0);
+  SaveScriptVariableValue(NULL, VAR_HIGHEST_DUNGEON_FLOOR, 0);
+}
+
 // Called for special process IDs 100 and greater.
 //
 // Set return_val to the return value that should be passed back to the game's script engine. Return true,
@@ -28,6 +34,10 @@ bool CustomScriptSpecialProcessCall(undefined4* unknown, uint32_t special_proces
   switch (special_process_id) {
     case 100:
       SpSetPartnerTacticGroupSafety();
+      *return_val = 0;
+      return true;
+    case 101:
+      SpResetDungeonGlobals();
       *return_val = 0;
       return true;
     default:

@@ -6,6 +6,75 @@
 // Whether the player has taken the stairs in the opposite direction
 static bool GoneBackToPreviousFloor = false;
 
+static bool IsCurrentDungeonAscending() {
+  return DUNGEON_RESTRICTIONS[DUNGEON_PTR->id.val].f_dungeon_goes_up;
+}
+
+static void ReturnToPreviousFloor() {
+  // There are two different sound effects based on whether you go up or down the stairs
+  // (inverted here)
+  int se_index = IsCurrentDungeonAscending() ? 4873 : 4874;
+  PlaySe(se_index, 0x100);
+
+  GoneBackToPreviousFloor = true;
+  DUNGEON_PTR->floor -= 2;
+  DUNGEON_PTR->end_floor_flag = true;
+}
+
+static char* FallbackStairsMenuEntryFunc(char* string_buffer, int option_num) {
+  switch (option_num) {
+    case 0:
+      return "Go up to the previous floor";
+    case 1:
+      return "Go down to the next floor";
+    case 2:
+      return "Cancel";
+  }
+}
+
+// If the stairs in the opposite direction could not be spawned,
+// show a menu to select whether to go up or down.
+bool CustomRunLeaderTurn(undefined param_1) {
+  if (DUNGEON_PTR->stepped_on_stairs && LoadScriptVariableValue(NULL, VAR_PP_ZERO_TRAP_SPAWN_FAILED)) {
+    struct advanced_menu_flags flags = {
+      .a_accept = true,
+      .b_cancel = true
+    };
+    int flags_int = *(int*) &flags;
+
+    PrintDialogue(NULL, NULL, "You've found two staircases leading\nup and down!", true);
+
+    HideMinimap();
+    AdvanceFrame(0);
+    AdvanceFrame(0);
+
+    int menu_id = CreateAdvancedMenu(NULL, flags_int, NULL, (undefined*) FallbackStairsMenuEntryFunc, 3, 3);
+    while (IsAdvancedMenuActive(menu_id)) {
+      AdvanceFrame(0);
+    }
+    int choice = GetAdvancedMenuResult(menu_id);
+    FreeAdvancedMenu(menu_id);
+
+    switch (choice) {
+      case 0:
+        // Go up to the previous floor
+        ReturnToPreviousFloor();
+        break;
+      case 1:
+        // Go down to the next floor
+        int se_index = IsCurrentDungeonAscending() ? 4874 : 4873;
+        PlaySe(se_index, 0x100);
+        DUNGEON_PTR->end_floor_flag = true;
+        break;
+      default:
+        // Cancel
+        DUNGEON_PTR->stepped_on_stairs = false;
+        break;
+    }
+  }
+  return RunLeaderTurn(param_1);
+}
+
 static void RunMonsterAiYoullAlwaysFindMe(struct entity* entity, struct monster* monster, undefined param_2) {
   struct entity* leader = GetLeader();
   if (!EntityIsValid(leader)) {
@@ -130,10 +199,6 @@ static bool TryAdjustSpawnPosition(int x_delta, int y_delta) {
   return true;
 }
 
-static bool IsCurrentDungeonAscending() {
-  return DUNGEON_RESTRICTIONS[DUNGEON_PTR->id.val].f_dungeon_goes_up;
-}
-
 // Try to spawn the descending stairs (very hard)
 static bool TrySpawnDescendingStairs(struct position pos) {
   if (TrySpawnTrap(&pos, TRAP_PP_ZERO_TRAP, 0, 1)) {
@@ -202,6 +267,8 @@ static bool TrySpawnDescendingStairs(struct position pos) {
 }
 
 void CustomSpawnTeam(undefined param_1) {
+  SaveScriptVariableValue(NULL, VAR_PP_ZERO_TRAP_SPAWN_FAILED, 0); // Reset "failed to spawn stairs" flag
+
   struct position trap_spawn_pos = {
     .x = DUNGEON_PTR->gen_info.team_spawn_pos.x,
     .y = DUNGEON_PTR->gen_info.team_spawn_pos.y,
@@ -251,12 +318,13 @@ void CustomSpawnTeam(undefined param_1) {
     bool spawned = TrySpawnDescendingStairs(trap_spawn_pos);
 
     if (!spawned) {
-      LogMessage(GetLeader(), "Failed to spawn stairs in the opposite direction", true);
+      COT_LOG(COT_LOG_CAT_DEFAULT, "Failed to spawn stairs in the opposite direction");
+      SaveScriptVariableValue(NULL, VAR_PP_ZERO_TRAP_SPAWN_FAILED, 1);
     }
   }
 
   GoneBackToPreviousFloor = false;
-  SaveScriptVariableValue(NULL, VAR_RECYCLE_COUNT, DUNGEON_PTR->floor);
+  SaveScriptVariableValue(NULL, VAR_HIGHEST_DUNGEON_FLOOR, DUNGEON_PTR->floor);
 }
 
 void CustomApplyPpZeroTrapEffect(struct entity* attacker, struct entity* defender) {
@@ -267,14 +335,7 @@ void CustomApplyPpZeroTrapEffect(struct entity* attacker, struct entity* defende
   struct monster* monster = defender->info;
   if (monster->is_team_leader) {
     if (YesNoMenu(0, 17902, 0, 0) == 1) { // "Return to the previous floor?"
-      // There are two different sound effects based on whether you go up or down the stairs
-      // (inverted here)
-      int se_index = IsCurrentDungeonAscending() ? 4873 : 4874;
-      PlaySe(se_index, 0x100);
-
-      GoneBackToPreviousFloor = true;
-      DUNGEON_PTR->floor -= 2;
-      DUNGEON_PTR->end_floor_flag = true;
+      ReturnToPreviousFloor();
     } else {
       ShowMinimap();
     }
@@ -357,21 +418,16 @@ void CustomTryTriggerTrap(struct entity* entity, struct position* pos, undefined
 
 // Record the highest floor and adjust item density accordingly before spawning items
 void CustomMarkNonEnemySpawns(struct floor_properties* floor_props, bool empty_monster_house) {
-  int highest_floor = LoadScriptVariableValue(NULL, VAR_RECYCLE_COUNT);
+  int highest_floor = LoadScriptVariableValue(NULL, VAR_HIGHEST_DUNGEON_FLOOR);
   if (floor_props->floor_number <= highest_floor) {
     floor_props->item_density = 0;
   }
   MarkNonEnemySpawns(floor_props, empty_monster_house);
 }
 
-void ResetDungeonGlobals() {
-  GoneBackToPreviousFloor = false;
-  SaveScriptVariableValue(NULL, VAR_RECYCLE_COUNT, 0);
-}
-
 // Reset global variables before calling the actual `RunDungeon` function.
 void CustomRunDungeon(struct dungeon_init* dungeon_init_data, struct dungeon* dungeon) {
-  ResetDungeonGlobals();
+  GoneBackToPreviousFloor = false;
   RunDungeon(dungeon_init_data, dungeon);
 }
 

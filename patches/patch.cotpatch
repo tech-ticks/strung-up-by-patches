@@ -1,8 +1,8 @@
 SaveFileIdentifier+0:
   .ascii "STRUNG_SKETCH"
 
-RunDungeonCallsite+0:
-  bl CustomRunDungeon
+RunLeaderTurnCallsite+0:
+  bl CustomRunLeaderTurn
 
 RunMonsterAiCallSite+0:
   bl CustomRunMonsterAi

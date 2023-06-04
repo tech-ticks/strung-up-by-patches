@@ -18,6 +18,7 @@ ApplyItemEffectHookAddr = 0x0231b9ac;
 ApplyItemEffectJumpAddr = 0x0231CB14;
 
 RunDungeonCallsite = 0x234bd68;
+RunLeaderTurnCallsite = 0x22ebd34;
 RunMonsterAiCallSite = 0x022ebe88;
 RunMonsterAiCallSite2 = 0x022ec18c;
 FUN_022fb538 = 0x022fb538;
@@ -25,6 +26,7 @@ FUN_022e4964 = 0x022e4964;
 HideMinimap = 0x0234d558;
 MinimapRelated = 0x022EA428;
 SpawnTeamCallSite = 0x22df6a4;
+PrintDialogue = 0x0234D304;
 
 DrawMinimapTileReturn = 0x023398c0;
 MarkNonEnemySpawnsCallsite1 = 0x0233acc0;
