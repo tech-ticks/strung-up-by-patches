@@ -1,6 +1,9 @@
 SaveFileIdentifier+0:
   .ascii "STRUNG_SKETCH"
 
+RunDungeonCallsite+0:
+  bl CustomRunDungeon
+
 RunMonsterAiCallSite+0:
   bl CustomRunMonsterAi
 
@@ -12,3 +15,39 @@ CreateHallway+0:
 
 StairsAlwaysReachable+0:
   b HookStairsAlwaysReachable
+
+SpawnTeamCallSite+0:
+  bl CustomSpawnTeam
+
+ApplyPpZeroTrapEffect+0:
+  b CustomApplyPpZeroTrapEffect
+
+GetTrapAnimationCallSite+0:
+  bl CustomGetTrapAnimation
+
+DrawMinimapTile+0:
+  b CustomDrawMinimapTile
+
+DrawMinimapTileReturn+0:
+  b TrampolineDrawMinimapTileReturn
+
+MarkNonEnemySpawnsCallsite1+0:
+  bl CustomMarkNonEnemySpawns
+
+MarkNonEnemySpawnsCallsite2+0:
+  bl CustomMarkNonEnemySpawns
+
+TryTriggerTrapCallsite1+0:
+  bl CustomTryTriggerTrap
+
+TryTriggerTrapCallsite2+0:
+  bl CustomTryTriggerTrap
+
+TryTriggerTrapCallsite3+0:
+  bl CustomTryTriggerTrap
+
+DisplayUiCallsite1+0:
+  bl CustomDisplayUi
+
+DisplayUiCallsite2+0:
+  bl CustomDisplayUi

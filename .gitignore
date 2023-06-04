@@ -9,6 +9,7 @@ out.asm
 *.sav
 *.ml*
 *.nds.skytemple
+*.xdelta
 
 symbols/generated_*.ld
 

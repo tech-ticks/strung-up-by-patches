@@ -125,7 +125,7 @@ def apply_binary_patches():
       file, ram_address = overlay_bytes[index]
       rom.files[overlay.fileID] = bytes(file)
 
-offset_regex = re.compile('(.+)\+(\d):', re.IGNORECASE)
+offset_regex = re.compile('(.+)\+([0-9A-F]+):', re.IGNORECASE)
 branch_regex = re.compile('^bl?(eq|ne|cs|hs|cc|lo|mi|pl|vs|vc|hi|ls|ge|lt|gt|le|al)?$', re.IGNORECASE)
 
 def apply_binary_patch(file_path, overlay_bytes):
@@ -156,6 +156,7 @@ def apply_binary_patch(file_path, overlay_bytes):
         assert current_offset != -1, "Symbol and offset must be specified before instructions"
 
         split_line = line.split()
+
         if branch_regex.match(split_line[0]):
           assert len(split_line) >= 2, "Branch must have an operand"
 

@@ -4,10 +4,6 @@
 #include "common.h"
 #include "extern.h"
 
-static void ShowMinimap() {
-  MinimapRelated(0, 0);
-}
-
 struct advanced_menu_flags {
   bool a_accept: 1;
   bool b_cancel: 1;
