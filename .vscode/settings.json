@@ -3,6 +3,8 @@
     "*.make": "makefile",
     "*.lua.dc": "lua",
     "*.h": "cpp",
-    "cmath": "c"
+    "cmath": "c",
+    "__locale": "c",
+    "system_error": "c"
   }
 }

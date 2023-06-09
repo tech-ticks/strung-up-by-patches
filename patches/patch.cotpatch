@@ -4,13 +4,26 @@ SaveFileIdentifier+0:
 RunLeaderTurnCallsite+0:
   bl CustomRunLeaderTurn
 
-RunMonsterAiCallSite+0:
+RunDungeonCallsite+0:
+  bl CustomRunDungeon
+
+RunMonsterAiCallsite1+0:
   bl CustomRunMonsterAi
 
-RunMonsterAiCallSite2+0:
+RunMonsterAiCallsite2+0:
+  bl CustomRunMonsterAi
+
+RunMonsterAiCallsite3+0:
+  bl CustomRunMonsterAi
+
+RunMonsterAiCallsite4+0:
+  bl CustomRunMonsterAi
+
+RunMonsterAiCallsite5+0:
   bl CustomRunMonsterAi
 
 CreateHallway+0:
+  //stmdb sp!,{r3,r4,r5,r6,r7,r8,r9,r10,r11,lr}
   b HookCreateHallway
 
 StairsAlwaysReachable+0:
@@ -25,11 +38,17 @@ ApplyPpZeroTrapEffect+0:
 GetTrapAnimationCallSite+0:
   bl CustomGetTrapAnimation
 
+// Restores code from previous patches that are no longer needed
 DrawMinimapTile+0:
-  b CustomDrawMinimapTile
+  stmdb sp!,{r3,r4,r5,r6,r7,r8,r9,r10,r11,lr}
+  //b CustomDrawMinimapTile
 
 DrawMinimapTileReturn+0:
-  b TrampolineDrawMinimapTileReturn
+  ldmia sp!,{r3,r4,r5,r6,r7,r8,r9,r10,r11,pc}
+  //b TrampolineDrawMinimapTileReturn
+
+TrapMinimapGraphics+0F:
+  .byte 13 // Hidden Stairs
 
 MarkNonEnemySpawnsCallsite1+0:
   bl CustomMarkNonEnemySpawns
@@ -46,8 +65,39 @@ TryTriggerTrapCallsite2+0:
 TryTriggerTrapCallsite3+0:
   bl CustomTryTriggerTrap
 
+ApplyTrapEffectCallsite1+0:
+  bl CustomApplyTrapEffect
+
+ApplyTrapEffectCallsite2+0:
+  bl CustomApplyTrapEffect
+
+ApplyTrapEffectCallsite3+0:
+  bl CustomApplyTrapEffect
+
 DisplayUiCallsite1+0:
   bl CustomDisplayUi
 
 DisplayUiCallsite2+0:
   bl CustomDisplayUi
+
+TalkBazaarPokemonCallsite+0:
+  bl CustomTalkBazaarPokemon
+
+//ConvertWallsToChasmsCheck+0:
+//  ldrb r0, [r0, 0x748] # Dungeon ID
+//  cmp r0, 1 # Remember Place
+//  nop
+//  nop
+//  nop
+//  nop
+//  nop
+//  nop
+//
+//DisplayChasmsAsWallsCheck+0:
+//  ldrb r0, [r12, 0x748] # Dungeon ID
+//  cmp r0, 1 # Remember Place
+//  nop
+//  nop
+//  nop
+//  nop
+//  nop

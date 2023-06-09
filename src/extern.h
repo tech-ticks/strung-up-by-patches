@@ -1,13 +1,26 @@
 #pragma once
 
+#include <pmdsky.h>
+#include <cot.h>
+
 extern int TextboxSE;
 extern uint16_t GBA_JOYPAD_KEYS;
 
+void InitTeamMemberDataBasedOnLevel(struct ground_monster* mentry, int level, undefined unknown);
+void ApplyPartyChange(uint8_t unk);
+void AddIndexedSlot(int index);
+
 void DrawHorizontalLine(int box_id, int x, int y, int width, int color);
 void PrintDialogue(undefined unknown, struct portrait_box* portrait_box, char* string, bool wait_before_closing);
+int YesNoMenuWithStringPtr(struct portrait_box* portrait_ptr, char* string, int default_option, int unknown, int maybe_also_default_option);
 void HideMinimap();
+void InitPortraitData(struct portrait_box* portrait_ptr, enum monster_id pokemon_id, int face_id);
+void TalkBazaarPokemon(undefined4 unknown, struct entity* entity);
+void MinimapRelated(undefined unk1, undefined unk2);
+void FUN_022fb538(struct entity* entity); // unknown
+void FUN_022e4964(struct entity* entity); // Play PP Up animation?
 
-static void ShowMinimap() {
+static inline void ShowMinimap() {
   MinimapRelated(0, 0);
 }
 

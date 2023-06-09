@@ -54,7 +54,7 @@ TARGET		:=	out
 BUILD		:=	build
 SOURCES		:=	src src/cot
 INCLUDES	:=	include pmdsky-debug/headers
-OPT_LEVEL := -O2
+OPT_LEVEL := -Os
 
 # Change to "RELEASE_CONFIG := -DNDEBUG" for release builds without asserts and logs
 RELEASE_CONFIG := -DDEBUG
@@ -68,7 +68,7 @@ ARCH	:=	-marm -mno-thumb-interwork
 
 CFLAGS	:=	-g -Wall $(OPT_LEVEL) $(RELEASE_CONFIG) $(SP_EFFECT_COMPAT) \
  			-march=armv5te -mtune=arm946e-s -fomit-frame-pointer -fno-short-enums \
-			-ffast-math \
+			-ffast-math -flto \
 			$(ARCH)
 
 CFLAGS	+=	$(INCLUDE) -DARM9

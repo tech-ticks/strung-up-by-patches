@@ -11,7 +11,7 @@
 #ifndef NDEBUG
 
 #define _COT_INTERNAL_LOG_MESSAGE(category, format) \
-  "[" category "] " format " (" __FILE__ ":" _COT_INTERNAL_STRINGIZE(__LINE__) ")"
+  "[" category "] " format
 
 #define COT_LOG(category, format)           DebugPrint(0, _COT_INTERNAL_LOG_MESSAGE(category, format))
 #define COT_WARN(category, format)          DebugPrint(1, _COT_INTERNAL_LOG_MESSAGE(category, format))

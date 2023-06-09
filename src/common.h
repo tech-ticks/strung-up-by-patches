@@ -1,5 +1,7 @@
 #pragma once
 
+#define ARRAY_COUNT(arr) (sizeof(arr) / sizeof((arr)[0]))
+
 // Set to the highest floor in the current dungeon
 #define VAR_HIGHEST_DUNGEON_FLOOR VAR_RECYCLE_COUNT
 

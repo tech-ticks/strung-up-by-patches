@@ -1,10 +1,15 @@
 /* !file arm9 */
-DrawHorizontalLine = 0x02025D50;
 SaveFileIdentifier = 0x0209cd3c;
 TextboxSE = 0x02017D1C;
 
+DrawHorizontalLine = 0x02025D50;
+InitTeamMemberDataBasedOnLevel = 0x020544C8;
+ApplyPartyChange = 0x2057464;
+AddIndexedSlot = 0x2056554;
+
 /* Workaround for "undefined reference to 'memset'" */
 memset = 0x2087308;
+memcpy = 0x208729C;
 
 GBA_JOYPAD_KEYS = 0x4000130;
 
@@ -18,23 +23,37 @@ ApplyItemEffectHookAddr = 0x0231b9ac;
 ApplyItemEffectJumpAddr = 0x0231CB14;
 
 RunDungeonCallsite = 0x234bd68;
-RunLeaderTurnCallsite = 0x22ebd34;
-RunMonsterAiCallSite = 0x022ebe88;
-RunMonsterAiCallSite2 = 0x022ec18c;
+RunLeaderTurnCallsite = 0x022ebd34;
+RunMonsterAiCallsite1 = 0x022ebe88;
+RunMonsterAiCallsite2 = 0x022ebfe8;
+RunMonsterAiCallsite3 = 0x022ec18c;
+RunMonsterAiCallsite4 = 0x022ec564;
+RunMonsterAiCallsite5 = 0x022ec6b0;
 FUN_022fb538 = 0x022fb538;
 FUN_022e4964 = 0x022e4964;
 HideMinimap = 0x0234d558;
 MinimapRelated = 0x022EA428;
 SpawnTeamCallSite = 0x22df6a4;
 PrintDialogue = 0x0234D304;
+InitPortraitData = 0x0234BAC0;
+YesNoMenuWithStringPtr = 0x0234d4bc;
 
 DrawMinimapTileReturn = 0x023398c0;
 MarkNonEnemySpawnsCallsite1 = 0x0233acc0;
 MarkNonEnemySpawnsCallsite2 = 0x0233ad84;
+ConvertWallsToChasmsCheck = 0x0233ae30;
+DisplayChasmsAsWallsCheck = 0x2336564;
 
 TryTriggerTrapCallsite1 = 0x22f3770;
 TryTriggerTrapCallsite2 = 0x22feb54;
 TryTriggerTrapCallsite3 = 0x2305800;
+ApplyTrapEffectCallsite1 = 0x22ee2c0;
+ApplyTrapEffectCallsite2 = 0x022eefa8;
+ApplyTrapEffectCallsite3 = 0x022ef04c;
+TrapMinimapGraphics = 0x02352FF4; /* Maps each trap to its tile value */
 
 DisplayUiCallsite1 = 0x22e33c8;
 DisplayUiCallsite2 = 0x22ea15c;
+
+TalkBazaarPokemon = 0x02344544; /* Seems to be called when talking to Bazaar mons */
+TalkBazaarPokemonCallsite = 0x22f5bc8;

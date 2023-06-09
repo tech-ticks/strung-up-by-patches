@@ -26,6 +26,34 @@ void SpResetDungeonGlobals() {
   SaveScriptVariableValue(NULL, VAR_HIGHEST_DUNGEON_FLOOR, 0);
 }
 
+static void RemoveParty() {
+  // Remove all active party members
+  for (int i = 0; i < 4; i++) {
+    struct team_member* team_member = GetActiveTeamMember(i);
+    if (team_member != NULL) {
+      team_member->f_is_valid = false;
+    }
+  }
+}
+
+// https://github.com/Adex-8x/EoS-ASM-Effects/blob/main/special_processes/monster_entry/add_mentry_to_party.asm
+static int AddMentryToParty(int id) {
+  AddIndexedSlot(id);
+  ApplyPartyChange(*(((char* )&TEAM_MEMBER_TABLE_PTR) + 0x9877));
+  return 0;
+}
+
+// SP 102: Time skip
+void SpTimeSkip() {
+  PLAY_TIME_SECONDS += 99 + 99 * 60 + 99 * 60 * 60;
+
+  // Increase the level
+  RemoveParty();
+  struct ground_monster* ground_monster_hero = GetHero();
+  InitTeamMemberDataBasedOnLevel(ground_monster_hero, 36, 0);
+  AddMentryToParty(0);
+}
+
 // Called for special process IDs 100 and greater.
 //
 // Set return_val to the return value that should be passed back to the game's script engine. Return true,
@@ -38,6 +66,10 @@ bool CustomScriptSpecialProcessCall(undefined4* unknown, uint32_t special_proces
       return true;
     case 101:
       SpResetDungeonGlobals();
+      *return_val = 0;
+      return true;
+    case 102:
+      SpTimeSkip();
       *return_val = 0;
       return true;
     default:
