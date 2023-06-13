@@ -80,6 +80,46 @@ bool __attribute__((used)) CustomRunLeaderTurn(undefined param_1) {
         break;
     }
   }
+
+  // Increment the floor count based on player position in the Secret Room
+  if (IsSecretRoom()) {
+    int initial_floor = 1;
+    struct entity* leader = GetLeader();
+    if (EntityIsValid(leader)) {
+      if (leader->pos.y < 10) {
+        DUNGEON_PTR->floor = initial_floor + 6;
+      } else if (leader->pos.y < 12) {
+        DUNGEON_PTR->floor = initial_floor + 5;
+      } else if (leader->pos.y < 14) {
+        DUNGEON_PTR->floor = initial_floor + 4;
+      } else if (leader->pos.y < 16) {
+        DUNGEON_PTR->floor = initial_floor + 3;
+      } else if (leader->pos.y < 18) {
+        DUNGEON_PTR->floor = initial_floor + 2;
+      } else if (leader->pos.y < 20) {
+        DUNGEON_PTR->floor = initial_floor + 1;
+      } else {
+        DUNGEON_PTR->floor = initial_floor;
+      }
+    }
+  }
+
+  if (DUNGEON_PTR->floor == 1) {
+    for (int i = 0; i < 20; i++) {
+      struct entity* entity = DUNGEON_PTR->entity_table.header.active_monster_ptrs[i];
+      if (IsMonster(entity)) {
+        struct monster* monster = entity->info;
+        struct entity* leader = GetLeader();
+        if (monster->id.val == MONSTER_TOGETIC && leader->pos.y < 10) {
+          union damage_source source = {
+            .other = DAMAGE_SOURCE_WENT_AWAY
+          };
+          HandleFaint(entity, source, NULL);
+        }
+      }
+    }
+  }
+
   return RunLeaderTurn(param_1);
 }
 
@@ -139,11 +179,85 @@ static void RunMonsterAiRockSmash(struct entity* entity, struct monster* monster
   return RunMonsterAi(entity, param_2);
 }
 
+// Helper for making NPCs stationary and executing the script `npc_[num]_clear.dnscrpt`
+// when a quest objective is met
+static void ClearNPCQuest(struct dungeon_npc_entry* npc, struct entity* npc_entity) {
+  struct monster* monster = npc_entity->info;
+  monster->statuses.monster_behavior.val = BEHAVIOR_SECRET_BAZAAR_KIRLIA;
+  monster->joined_at.val = 0; // Disable pushing again
+
+  struct entity* leader = GetLeader();
+  if (EntityIsValid(leader)) {
+    // Ensure that the NPC is facing the leader
+    enum direction_id dir = GetDirectionTowardsPosition(&npc_entity->pos, &leader->pos);
+    npc_entity->graphical_direction.val = dir;
+    npc_entity->graphical_direction_mirror0.val = dir;
+    npc_entity->graphical_direction_mirror1.val = dir;
+  }
+  
+  char script_name_buffer[0x10];
+  Snprintf(script_name_buffer, 0x10, "npc_%03d_clear", npc->script_id);
+  RunDungeonScript(script_name_buffer, npc_entity);
+}
+
+static void WarpAbra(struct entity* entity, struct monster* monster, struct entity* litwick) {
+  for (int i = 0; i < 30; i++) {
+    AdvanceFrame(0);
+  }
+  EndNegativeStatusCondition(entity, entity, false, false, true);
+  LogMessage(entity, "[CS:G]Abra[CR] used [CS:K]Teleport[CR]!", true);
+  for (int i = 0; i < 30; i++) {
+    AdvanceFrame(0);
+  }
+  TryWarp(entity, entity, WARP_RANDOM, NULL);
+
+  enum direction_id dir = GetDirectionTowardsPosition(&litwick->pos, &entity->pos);
+  litwick->graphical_direction.val = dir;
+  litwick->graphical_direction_mirror0.val = dir;
+  litwick->graphical_direction_mirror1.val = dir;
+
+  struct monster* litwick_monster = litwick->info;
+  PlayEffectAnimationPos(&litwick->pos, 91, true);
+  struct portrait_box portrait_box;
+  InitPortraitData(&portrait_box, litwick_monster->id.val, 12);
+  PrintDialogue(NULL, &portrait_box, "[CS:G]Abra[CR],[W:10] nooooooooooooooooooooo[VS:2:0]ooooooooooooo![VR][W:10]\nWhere did you go?[W:15]\n[FACE:7]You can't just leave me like this!", true);
+}
+
+static void CheckWantedPokemonAdjacent(struct entity* entity, struct monster* monster) {
+  struct dungeon_npc_entry entry;
+  if (FindDungeonNpcEntry(&entry, monster->id.val) && entry.npc_type == NPC_TYPE_PUSH_TO_POKEMON) {
+    for (int i = 0; i < 20; i++) {
+      struct entity* other_entity = DUNGEON_PTR->entity_table.header.active_monster_ptrs[i];
+      if (!EntityIsValid(other_entity)) {
+        continue;
+      }
+
+      struct monster* other_monster = other_entity->info;
+
+      // The monster ID might be changed to the female form
+      int other_monster_id = FemaleToMaleForm(other_monster->id.val);
+      if (AreEntitiesAdjacent(entity, other_entity)
+          && other_monster_id == entry.parameter2
+          && HasMonsterBeenAttackedInDungeons(other_monster_id)) {
+        ClearNPCQuest(&entry, entity);
+        other_monster->statuses.monster_behavior.val = BEHAVIOR_SECRET_BAZAAR_KIRLIA;
+        other_monster->is_ally = true;
+
+        // Abra go warp
+        if (FemaleToMaleForm(other_monster_id) == MONSTER_ABRA) {
+          WarpAbra(other_entity, other_monster, entity);
+          return;
+        }
+      }
+    }
+  }
+}
+
 void __attribute__((used)) CustomRunMonsterAi(struct entity* entity, undefined param_2) {  
   if (!IsMonster(entity)) {
     return RunMonsterAi(entity, param_2);
   }
-  
+
   struct monster* monster = entity->info;
 
   if (monster->statuses.monster_behavior.val == BEHAVIOR_SECRET_BAZAAR_KIRLIA) {
@@ -151,6 +265,13 @@ void __attribute__((used)) CustomRunMonsterAi(struct entity* entity, undefined p
     // their position has changed. This is a workaround to prevent that.
     ClearMonsterActionFields(&monster->action);
     return;
+  }
+  
+  if (monster->statuses.monster_behavior.val == BEHAVIOR_ALLY) {
+    // If the NPC wants to be pushed to a Pokémon, check if they're adjacent
+    // to a monster with the correct ID
+    CheckWantedPokemonAdjacent(entity, monster);
+    return RunMonsterAi(entity, param_2);
   }
 
   if (monster->tactic.val == TACTIC_GROUP_SAFETY) { // You'll always find me
@@ -193,8 +314,11 @@ bool __attribute__((naked)) TrampolineCallOriginalStairsAlwaysReachable(int x_st
 }
 
 bool __attribute__((used)) HookStairsAlwaysReachable(int x_stairs, int y_stairs, bool mark_unreachable) {
-  if (ShouldUseLayoutWithoutHallways()) {
-    // Disable the check for whether the stairs are reachable to avoid the one room monster house
+  if (ShouldUseLayoutWithoutHallways() || DUNGEON_PTR->floor_properties.fixed_room_id.val != 0) {
+    // Disable the check for whether the stairs are reachable to avoid the one room monster house.
+    // This is required in layouts without hallways because the check would always fail.
+    // It's also bypassed in floors with fixed rooms because the only other way to disable the check
+    // is via the "Is Free Layout" flag, which replaces the stairs with Warp Tiles.
     return true;
   }
 
@@ -364,51 +488,6 @@ uint16_t __attribute__((used)) CustomGetTrapAnimation(enum trap_id trap_id) {
   return trap_id == TRAP_PP_ZERO_TRAP ? 0 : GetTrapAnimation(trap_id);
 }
 
-static int MinimapTrapTileX = -1;
-static int MinimapTrapTileY = -1;
-
-void __attribute__((naked)) TrampolineCallOriginalDrawMinimapTile(int x, int y) {
-  asm("stmdb sp!,{r3,r4,r5,r6,r7,r8,r9,r10,r11,lr}"); // Replaced instruction
-  asm("b DrawMinimapTile+4");
-}
-
-// Replaces the call to `GetTile` in `CustomMinimapGetTile`.
-// Pretends that the PP Zero Trap is the hidden stairs.
-void __attribute__((used)) CustomDrawMinimapTile(int x, int y) {
-  MinimapTrapTileX = -1;
-  MinimapTrapTileY = -1;
-
-  struct tile* tile = GetTile(x, y);
-  struct entity* entity = tile->object;
-  if (EntityIsValid(entity) && entity->type == ENTITY_TRAP) {
-    struct trap* trap = entity->info;
-    if (trap->id.val == TRAP_PP_ZERO_TRAP) {
-      entity->type = ENTITY_HIDDEN_STAIRS;
-      MinimapTrapTileX = x;
-      MinimapTrapTileY = y;
-    }
-  }
-  TrampolineCallOriginalDrawMinimapTile(x, y);
-}
-
-// Turns the PP Zero Trap back into a trap after the minimap is drawn.
-void __attribute__((used)) RestorePPZeroTrapTile() {
-  if (MinimapTrapTileX == -1 || MinimapTrapTileY == -1) {
-    return;
-  }
-
-  struct tile* tile = GetTile(MinimapTrapTileX, MinimapTrapTileY);
-  struct entity* entity = tile->object;
-  if (EntityIsValid(entity)) {
-    entity->type = ENTITY_TRAP;
-  }
-}
-
-void __attribute__((naked)) TrampolineDrawMinimapTileReturn() {
-  asm("ldmia sp!,{r3,r4,r5,r6,r7,r8,r9,r10,r11,lr}"); // Replaced instruction (loads into `lr` instead of `pc`)
-  asm("b RestorePPZeroTrapTile");
-}
-
 // Special handling for the customized PP Zero trap ("downwards stairs")
 // Bypasses the sound effect played when triggering the trap and possible IQ skill effects.
 void __attribute__((used)) CustomTryTriggerTrap(struct entity* entity, struct position* pos, undefined param_3, undefined param_4) {
@@ -444,21 +523,7 @@ bool __attribute__((used)) CustomApplyTrapEffect(struct trap* trap, struct entit
     struct dungeon_npc_entry entry;
     if (FindDungeonNpcEntry(&entry, monster->id.val)) {
       if (entry.npc_type == NPC_TYPE_PUSH_TO_TRAP && trap_id == entry.parameter1) {
-        monster->statuses.monster_behavior.val = BEHAVIOR_SECRET_BAZAAR_KIRLIA;
-        monster->joined_at.val = 0; // Disable pushing again
-
-        struct entity* leader = GetLeader();
-        if (EntityIsValid(leader)) {
-          // Ensure that the NPC is facing the leader
-          enum direction_id dir = GetDirectionTowardsPosition(&target->pos, &leader->pos);
-          target->graphical_direction.val = dir;
-          target->graphical_direction_mirror0.val = dir;
-          target->graphical_direction_mirror1.val = dir;
-        }
-
-        char script_name_buffer[0x10];
-        Snprintf(script_name_buffer, 0x10, "npc_%03d_clear", entry.script_id);
-        RunDungeonScript(script_name_buffer, monster);
+        ClearNPCQuest(&entry, target);
       }
     }
   }
@@ -472,7 +537,17 @@ void __attribute__((used)) CustomMarkNonEnemySpawns(struct floor_properties* flo
   if (floor_props->floor_number < highest_floor) {
     floor_props->item_density = 0;
   }
+
   MarkNonEnemySpawns(floor_props, empty_monster_house);
+
+  if (DUNGEON_PTR->id.val == DUNGEON_DRENCHED_BLUFF /* Polyphonic Playground */ && DUNGEON_PTR->floor == 1 && !IsHiddenStairsFloor()) {
+    // Add Hidden Stairs to the first floor of Polyphonic Playground
+    uint8_t pos[2] = {
+      11,
+      7
+    };
+    SpawnStairs(pos, &DUNGEON_PTR->gen_info, HIDDEN_STAIRS_SECRET_ROOM);
+  }
 }
 
 // Reset global variables before calling the actual `RunDungeon` function.
@@ -491,7 +566,7 @@ void __attribute__((used)) CustomDisplayUi() {
   }
 }
 
-void __attribute__((used)) CustomTalkBazaarPokemon(undefined4 unknown, struct entity* entity) {
+void __attribute__((used)) CustomTalkBazaarPokemon(undefined4 unknown, struct entity* entity) {  
   if (!IsMonster(entity)) {
     return TalkBazaarPokemon(unknown, entity);
   }
@@ -508,24 +583,25 @@ void __attribute__((used)) CustomTalkBazaarPokemon(undefined4 unknown, struct en
   char script_name_buffer[0x10];
   Snprintf(script_name_buffer, 0x10, "npc_%03d", entry.script_id);
 
-  int result = RunDungeonScript(script_name_buffer, monster);
+  int result = RunDungeonScript(script_name_buffer, entity);
   switch (entry.npc_type) {
     case NPC_TYPE_NORMAL:
       break;
     case NPC_TYPE_PUSH_TO_TRAP:
+      // Stupid hack: ensure that the NPC is actually affected by the trap
+      for (int i = 0; i < 64; i++) {
+        struct trap* trap = &DUNGEON_PTR->traps[i];
+        if (trap->id.val == entry.parameter1) {
+          trap->team = 1;
+        }
+      }
+      [[fallthrough]]
+    case NPC_TYPE_PUSH_TO_POKEMON:
       if (result == 1) {
         monster->joined_at.val = DUNGEON_CLIENT; // Enable pushing (why)
         monster->is_ally = true;
         monster->statuses.monster_behavior.val = BEHAVIOR_ALLY;
         monster->tactic.val = TACTIC_WAIT_THERE;
-
-        // Stupid hack: ensure that the NPC is actually affected by the trap
-        for (int i = 0; i < 64; i++) {
-          struct trap* trap = &DUNGEON_PTR->traps[i];
-          if (trap->id.val == entry.parameter1) {
-            trap->team = 1;
-          }
-        }
       }
       break;
   }
@@ -533,4 +609,15 @@ void __attribute__((used)) CustomTalkBazaarPokemon(undefined4 unknown, struct en
 
 bool __attribute__((used)) ShouldConvertWallsToChasms() {
   return DUNGEON_PTR->id.val == DUNGEON_BEACH_CAVE;
+}
+
+bool __attribute__((used)) CustomCanMonsterUseItem(struct entity* entity, struct item* item) {
+  if (item->id.val == ITEM_KEY) {
+    struct tile* maybe_key_door = GetTileSafe(entity->pos.x, entity->pos.y - 1);
+    if (!maybe_key_door->f_key_door_key_locked) {
+      LogMessageByIdWithPopupCheckUser(entity, 2964 /* "It can't be used here!" */);
+      return false;
+    }
+  }
+  return true;
 }

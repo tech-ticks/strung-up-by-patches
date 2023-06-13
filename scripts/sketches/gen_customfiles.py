@@ -36,16 +36,35 @@ DUNGEON_LITTLE_DREAM = 5
 
 NPC_TYPE_NORMAL = 0
 NPC_TYPE_PUSH_TO_TRAP = 1
+NPC_TYPE_PUSH_TO_POKEMON = 2
 
 npc_data = [
+    {
+        "monster_id": 35, # Clefairy
+        "script_id": 0,
+        "dungeon_id": DUNGEON_POLYPHONIC_PLAYGROUND,
+        "floor": 1,
+        "npc_type": NPC_TYPE_NORMAL,
+        "parameter1": 0,
+        "parameter2": 0
+    },
     {
         "monster_id": 286, # Mudkip
         "script_id": 1,
         "dungeon_id": DUNGEON_POLYPHONIC_PLAYGROUND,
-        "floor": 1,
+        "floor": 2,
         "npc_type": NPC_TYPE_PUSH_TO_TRAP,
         "parameter1": TRAP_MUD_TRAP,
         "parameter2": 0
+    },
+    {
+        "monster_id": 539, # Litwick
+        "script_id": 2,
+        "dungeon_id": DUNGEON_POLYPHONIC_PLAYGROUND,
+        "floor": 3,
+        "npc_type": NPC_TYPE_PUSH_TO_POKEMON,
+        "parameter1": 0,
+        "parameter2": 63, # Abra
     },
 ]
 

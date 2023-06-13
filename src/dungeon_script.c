@@ -36,11 +36,11 @@
 
 struct ScriptEngineState {
   void* ip; // Instruction pointer
-  struct monster* npc_monster;
+  struct entity* npc_monster;
   bool condition_flag;
 };
 
-#define SCRIPT_BUFFER_SIZE 0x400
+#define SCRIPT_BUFFER_SIZE 0x800
 static uint8_t SCRIPT_BUFFER[SCRIPT_BUFFER_SIZE];
 
 struct ScriptEngineString {
@@ -75,13 +75,18 @@ static bool LoadDungeonScriptToBuffer(char* name) {
   return true;
 }
 
-static struct monster* GetScriptCharacterByIndex(struct ScriptEngineState* state, uint8_t index) {
-  if (index == 255) {
+static struct entity* GetScriptCharacterByIndex(struct ScriptEngineState* state, uint8_t index) {  
+  if (index == 255 && state->npc_monster != NULL) {
     return state->npc_monster;
   }
 
-  if (index > 0 && index <= 4) {
-    return &DUNGEON_PTR->monsters[index - 1];
+  if (index > 0 && index <= 20) {
+    struct entity* entity = DUNGEON_PTR->entity_table.header.active_monster_ptrs[index - 1];
+    if (EntityIsValid(entity)) {
+      return entity;
+    } else {
+      return NULL;
+    }
   } else {
     return NULL;
   }
@@ -116,9 +121,10 @@ static int HandleOpDialogue(struct ScriptEngineState* state, bool wait) {
     COT_LOGFMT(LOG_CATEGORY, "OpDialogue: chara=%d portrait=%d string=%s", op->chara, op->portrait, op->string.chars);
   }
 
-  struct monster* monster = GetScriptCharacterByIndex(state, op->chara);
+  struct entity* entity = GetScriptCharacterByIndex(state, op->chara);
 
-  if (monster) {
+  if (entity != NULL) {
+    struct monster* monster = entity->info;
     struct portrait_box portrait_box;
     InitPortraitData(&portrait_box, monster->id.val, op->portrait);
     PrintDialogue(NULL, &portrait_box, op->string.chars, wait);
@@ -143,8 +149,8 @@ static int HandleOpEffect(struct ScriptEngineState* state, bool wait) {
     COT_LOGFMT(LOG_CATEGORY, "OpEffect: chara=%d effect=%d", op->chara, op->effect);
   }
 
-  struct monster* monster = GetScriptCharacterByIndex(state, op->chara);
-  PlayEffectAnimationPos(&monster->pos, op->effect, wait);
+  struct entity* entity = GetScriptCharacterByIndex(state, op->chara);
+  PlayEffectAnimationEntity(entity, op->effect, wait, 0, 0, 0, 0, NULL);
 
   return sizeof(struct OpEffect);
 }
@@ -236,8 +242,9 @@ static int HandleOpYesNo(struct ScriptEngineState* state) {
 
   COT_LOGFMT(LOG_CATEGORY, "OpYesNo: chara=%d portrait=%d default=%d string=%s", op->chara, op->portrait, op->default_val, op->string.chars);
 
-  struct monster* monster = GetScriptCharacterByIndex(state, op->chara);
-  if (monster) {
+  struct entity* entity = GetScriptCharacterByIndex(state, op->chara);
+  if (entity != NULL) {
+    struct monster* monster = entity->info;
     struct portrait_box portrait_box;
     InitPortraitData(&portrait_box, monster->id.val, op->portrait);
     bool res = YesNoMenuWithStringPtr(&portrait_box, op->string.chars, op->default_val, 0, op->default_val) == 1;
@@ -371,8 +378,9 @@ static int HandleOpWasAttacked(struct ScriptEngineState* state) {
 
   COT_LOGFMT(LOG_CATEGORY, "OpWasAttacked: chara=%d", op->chara);
 
-  struct monster* monster = GetScriptCharacterByIndex(state, op->chara);
-  if (monster) {
+  struct entity* entity = GetScriptCharacterByIndex(state, op->chara);
+  if (entity) {
+    struct monster* monster = entity->info;
     state->condition_flag = HasMonsterBeenAttackedInDungeons(monster->id.val);
   } else {
     state->condition_flag = false;
@@ -381,7 +389,7 @@ static int HandleOpWasAttacked(struct ScriptEngineState* state) {
   return sizeof(struct OpWasAttacked);
 }
 
-uint8_t RunDungeonScript(char* name, struct monster* npc_monster) {
+uint8_t RunDungeonScript(char* name, struct entity* npc_monster) {
   if (!LoadDungeonScriptToBuffer(name)) {
     LogMessage(NULL, "Failed to load dungeon script", true);
     return 0;

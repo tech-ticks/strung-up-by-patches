@@ -1,9 +1,6 @@
 #include "dungeon_npcs.h"
 
-#define NPC_TYPE_NORMAL 0
-#define NPC_TYPE_PUSH_TO_TRAP 1
-
-struct dungeon_npc_entry DUNGEON_NPCS[32];
+struct dungeon_npc_entry DUNGEON_NPCS[MAX_DUNGEON_NPCS];
 
 // Load dungeon NPC data for the given dungeon from `SKETCHES/dunnpcs.bin`
 void LoadDungeonNpcs(enum dungeon_id dungeon_id) {
@@ -40,7 +37,7 @@ void LoadDungeonNpcs(enum dungeon_id dungeon_id) {
 // Get the dungeon NPC entry for the given monster ID on the current floor
 bool FindDungeonNpcEntry(struct dungeon_npc_entry* entry, uint16_t monster_id) {
   for (int i = 0; i < ARRAY_COUNT(DUNGEON_NPCS); i++) {
-    if (DUNGEON_NPCS[i].monster_id == monster_id && DUNGEON_NPCS[i].floor == DUNGEON_PTR->floor) {
+    if (DUNGEON_NPCS[i].monster_id == FemaleToMaleForm(monster_id) && DUNGEON_NPCS[i].floor == DUNGEON_PTR->floor) {
       *entry = DUNGEON_NPCS[i];
       return true;
     }

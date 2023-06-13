@@ -57,3 +57,6 @@ DisplayUiCallsite2 = 0x22ea15c;
 
 TalkBazaarPokemon = 0x02344544; /* Seems to be called when talking to Bazaar mons */
 TalkBazaarPokemonCallsite = 0x22f5bc8;
+
+CheckFixedRoomItem = 0x02344454;
+CanMonsterUseItemCallsitePlayer = 0x22f537c; /* Called when the player uses an item */

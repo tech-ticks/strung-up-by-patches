@@ -3,4 +3,4 @@
 #include <pmdsky.h>
 #include <cot.h>
 
-uint8_t RunDungeonScript(char* name, struct monster* npc);
+uint8_t RunDungeonScript(char* name, struct entity* npc);

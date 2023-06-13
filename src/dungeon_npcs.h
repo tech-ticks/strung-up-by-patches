@@ -7,6 +7,7 @@
 
 #define NPC_TYPE_NORMAL 0
 #define NPC_TYPE_PUSH_TO_TRAP 1
+#define NPC_TYPE_PUSH_TO_POKEMON 2
 
 struct dungeon_npc_entry {
   uint16_t monster_id;
@@ -18,7 +19,8 @@ struct dungeon_npc_entry {
   uint16_t parameter2;
 };
 
-extern struct dungeon_npc_entry DUNGEON_NPCS[32];
+#define MAX_DUNGEON_NPCS 32
+extern struct dungeon_npc_entry DUNGEON_NPCS[MAX_DUNGEON_NPCS];
 
 // Load dungeon NPC data for the given dungeon from `SKETCHES/dunnpcs.bin`
 void LoadDungeonNpcs(enum dungeon_id dungeon_id);

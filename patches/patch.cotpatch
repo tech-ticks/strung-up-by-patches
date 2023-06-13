@@ -75,13 +75,26 @@ ApplyTrapEffectCallsite3+0:
   bl CustomApplyTrapEffect
 
 DisplayUiCallsite1+0:
-  bl CustomDisplayUi
+  mov r0, r0 // nop
 
 DisplayUiCallsite2+0:
   bl CustomDisplayUi
 
 TalkBazaarPokemonCallsite+0:
   bl CustomTalkBazaarPokemon
+
+// The game usually replaces all items in fixed rooms with
+// Reviver Seeds after they've been picked up
+// This patch disables that (thanks to Adex)
+CheckFixedRoomItem+0:
+  mov r0, 0
+
+CanMonsterUseItemCallsitePlayer+0:
+  bl CustomCanMonsterUseItem
+
+//ZeroInitializeItemOnDeletion+0:
+//  nop
+//  nop
 
 //ConvertWallsToChasmsCheck+0:
 //  ldrb r0, [r0, 0x748] # Dungeon ID
