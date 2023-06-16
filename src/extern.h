@@ -18,7 +18,7 @@ void InitPortraitData(struct portrait_box* portrait_ptr, enum monster_id pokemon
 void TalkBazaarPokemon(undefined4 unknown, struct entity* entity);
 void MinimapRelated(undefined unk1, undefined unk2);
 void FUN_022fb538(struct entity* entity); // unknown
-void FUN_022e4964(struct entity* entity); // Play PP Up animation?
+void PlayEffectAnimationEntitySimple(struct entity* entity, int effect_id);
 
 static inline void ShowMinimap() {
   MinimapRelated(0, 0);

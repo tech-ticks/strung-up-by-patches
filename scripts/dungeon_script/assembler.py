@@ -72,7 +72,7 @@ def disassemble_script(binary_data):
             if type_code == TYPE_STRING:
                 size = struct.unpack('<H', binary_data[ip:ip+2])[0]
                 ip += 2
-                param_value = '"' + binary_data[ip:ip+size].decode('utf-8').replace('\n', '\\n') + '"'
+                param_value = '"' + binary_data[ip:ip+size].decode('windows-1252').replace('\n', '\\n') + '"'
                 ip += size
             else:
                 size = struct.calcsize(type_code)
@@ -152,7 +152,7 @@ def assemble(instruction_name, *args):
             # Check if the argument is indeed a string
             if not isinstance(value, str):
                 raise ValueError(f"{param} must be a string")
-            value = value.replace("\\n", "\n").encode('utf-8') + b'\0' # Null-terminate the string
+            value = value.replace("\\n", "\n").encode('windows-1252') + b'\0' # Null-terminate the string
             packed_params.append(struct.pack('<H', len(value)) + value)
         else:
             # Check if the argument is a number and within range

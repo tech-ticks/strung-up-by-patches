@@ -7,3 +7,9 @@
 
 // Set to 1 if the PP Zero Trap stairs could not be spawned
 #define VAR_PP_ZERO_TRAP_SPAWN_FAILED VAR_SUB30_PROJECTP
+
+static void WaitFrames(int n) {
+  for (int i = 0; i < n; i++) {
+    AdvanceFrame(0);
+  }
+}

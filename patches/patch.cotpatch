@@ -92,25 +92,8 @@ CheckFixedRoomItem+0:
 CanMonsterUseItemCallsitePlayer+0:
   bl CustomCanMonsterUseItem
 
-//ZeroInitializeItemOnDeletion+0:
-//  nop
-//  nop
+FUN_0234b010Callsite+0:
+  bl OnFloorLoopOver
 
-//ConvertWallsToChasmsCheck+0:
-//  ldrb r0, [r0, 0x748] # Dungeon ID
-//  cmp r0, 1 # Remember Place
-//  nop
-//  nop
-//  nop
-//  nop
-//  nop
-//  nop
-//
-//DisplayChasmsAsWallsCheck+0:
-//  ldrb r0, [r12, 0x748] # Dungeon ID
-//  cmp r0, 1 # Remember Place
-//  nop
-//  nop
-//  nop
-//  nop
-//  nop
+HandleFaint+18:
+  bl HookHandleFaint /* Originally a call to GetTileAtEntity */

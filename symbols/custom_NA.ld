@@ -30,13 +30,13 @@ RunMonsterAiCallsite3 = 0x022ec18c;
 RunMonsterAiCallsite4 = 0x022ec564;
 RunMonsterAiCallsite5 = 0x022ec6b0;
 FUN_022fb538 = 0x022fb538;
-FUN_022e4964 = 0x022e4964;
 HideMinimap = 0x0234d558;
 MinimapRelated = 0x022EA428;
 SpawnTeamCallSite = 0x22df6a4;
 PrintDialogue = 0x0234D304;
 InitPortraitData = 0x0234BAC0;
 YesNoMenuWithStringPtr = 0x0234d4bc;
+PlayEffectAnimationEntitySimple = 0x022e42e8;
 
 DrawMinimapTileReturn = 0x023398c0;
 MarkNonEnemySpawnsCallsite1 = 0x0233acc0;
@@ -60,3 +60,5 @@ TalkBazaarPokemonCallsite = 0x22f5bc8;
 
 CheckFixedRoomItem = 0x02344454;
 CanMonsterUseItemCallsitePlayer = 0x22f537c; /* Called when the player uses an item */
+FUN_0234b010 = 0x0234b010;
+FUN_0234b010Callsite = 0x22dfb30; /* Called after transitioning to another floor */

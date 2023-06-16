@@ -8,6 +8,7 @@
 
 // Whether the player has taken the stairs in the opposite direction
 static bool GoneBackToPreviousFloor = false;
+static bool FreezePlayer = false; // Prevent moving in the dungeon
 
 static bool IsCurrentDungeonAscending() {
   return DUNGEON_RESTRICTIONS[DUNGEON_PTR->id.val].f_dungeon_goes_up;
@@ -33,16 +34,18 @@ static char* FallbackStairsMenuEntryFunc(char* string_buffer, int option_num) {
       return "Go up to the previous floor";
     case 1:
       return "Go down to the next floor";
-    case 2:
-      return "Cancel";
     default:
-      return "";
+      return "Cancel";
   }
 }
 
 // If the stairs in the opposite direction could not be spawned,
 // show a menu to select whether to go up or down.
 bool __attribute__((used)) CustomRunLeaderTurn(undefined param_1) {
+  if (FreezePlayer) {
+    return false;
+  }
+
   if (DUNGEON_PTR->stepped_on_stairs && LoadScriptVariableValue(NULL, VAR_PP_ZERO_TRAP_SPAWN_FAILED)) {
     struct advanced_menu_flags flags = {
       .a_accept = true,
@@ -100,22 +103,6 @@ bool __attribute__((used)) CustomRunLeaderTurn(undefined param_1) {
         DUNGEON_PTR->floor = initial_floor + 1;
       } else {
         DUNGEON_PTR->floor = initial_floor;
-      }
-    }
-  }
-
-  if (DUNGEON_PTR->floor == 1) {
-    for (int i = 0; i < 20; i++) {
-      struct entity* entity = DUNGEON_PTR->entity_table.header.active_monster_ptrs[i];
-      if (IsMonster(entity)) {
-        struct monster* monster = entity->info;
-        struct entity* leader = GetLeader();
-        if (monster->id.val == MONSTER_TOGETIC && leader->pos.y < 10) {
-          union damage_source source = {
-            .other = DAMAGE_SOURCE_WENT_AWAY
-          };
-          HandleFaint(entity, source, NULL);
-        }
       }
     }
   }
@@ -181,10 +168,12 @@ static void RunMonsterAiRockSmash(struct entity* entity, struct monster* monster
 
 // Helper for making NPCs stationary and executing the script `npc_[num]_clear.dnscrpt`
 // when a quest objective is met
-static void ClearNPCQuest(struct dungeon_npc_entry* npc, struct entity* npc_entity) {
+static void ClearNPCQuest(struct dungeon_npc_entry* npc, struct entity* npc_entity, bool disable_pushing) {
   struct monster* monster = npc_entity->info;
   monster->statuses.monster_behavior.val = BEHAVIOR_SECRET_BAZAAR_KIRLIA;
-  monster->joined_at.val = 0; // Disable pushing again
+  if (disable_pushing) {
+    monster->joined_at.val = 0; // Disable pushing again
+  }
 
   struct entity* leader = GetLeader();
   if (EntityIsValid(leader)) {
@@ -201,14 +190,10 @@ static void ClearNPCQuest(struct dungeon_npc_entry* npc, struct entity* npc_enti
 }
 
 static void WarpAbra(struct entity* entity, struct monster* monster, struct entity* litwick) {
-  for (int i = 0; i < 30; i++) {
-    AdvanceFrame(0);
-  }
+  WaitFrames(30);
   EndNegativeStatusCondition(entity, entity, false, false, true);
   LogMessage(entity, "[CS:G]Abra[CR] used [CS:K]Teleport[CR]!", true);
-  for (int i = 0; i < 30; i++) {
-    AdvanceFrame(0);
-  }
+  WaitFrames(30);
   TryWarp(entity, entity, WARP_RANDOM, NULL);
 
   enum direction_id dir = GetDirectionTowardsPosition(&litwick->pos, &entity->pos);
@@ -217,7 +202,7 @@ static void WarpAbra(struct entity* entity, struct monster* monster, struct enti
   litwick->graphical_direction_mirror1.val = dir;
 
   struct monster* litwick_monster = litwick->info;
-  PlayEffectAnimationPos(&litwick->pos, 91, true);
+  PlayEffectAnimationEntitySimple(&litwick->pos, 91);
   struct portrait_box portrait_box;
   InitPortraitData(&portrait_box, litwick_monster->id.val, 12);
   PrintDialogue(NULL, &portrait_box, "[CS:G]Abra[CR],[W:10] nooooooooooooooooooooo[VS:2:0]ooooooooooooo![VR][W:10]\nWhere did you go?[W:15]\n[FACE:7]You can't just leave me like this!", true);
@@ -239,8 +224,9 @@ static void CheckWantedPokemonAdjacent(struct entity* entity, struct monster* mo
       if (AreEntitiesAdjacent(entity, other_entity)
           && other_monster_id == entry.parameter2
           && HasMonsterBeenAttackedInDungeons(other_monster_id)) {
-        ClearNPCQuest(&entry, entity);
+        ClearNPCQuest(&entry, entity, false);
         other_monster->statuses.monster_behavior.val = BEHAVIOR_SECRET_BAZAAR_KIRLIA;
+        other_monster->joined_at.val = DUNGEON_JOINED_AT_BIDOOF;
         other_monster->is_ally = true;
 
         // Abra go warp
@@ -264,6 +250,33 @@ void __attribute__((used)) CustomRunMonsterAi(struct entity* entity, undefined p
     // For some reason, NPCs with the Kirlia behavior start moving back and forth after
     // their position has changed. This is a workaround to prevent that.
     ClearMonsterActionFields(&monster->action);
+
+    // Special behavior for Togetic on the first floor of Polyphonic Playground
+    if (DUNGEON_PTR->id.val == DUNGEON_DRENCHED_BLUFF && DUNGEON_PTR->floor == 1
+        && monster->id.val == MONSTER_TOGETIC) {
+      struct monster* monster = entity->info;
+      struct entity* leader = GetLeader();
+      if (monster->id.val == MONSTER_TOGETIC && leader->pos.y < 14) {
+        if (entity->pos.y == 11) {
+          PlayEffectAnimationEntitySimple(entity, 25);
+          WaitFrames(30);
+          FreezePlayer = true;
+        } else if (entity->pos.y == 7) {
+          union damage_source source = {
+            .other = DAMAGE_SOURCE_WENT_AWAY
+          };
+          HandleFaint(entity, source, NULL);
+          WaitFrames(40);
+          FreezePlayer = false;
+        }
+
+        monster->action.direction.val = DIR_UP;
+        SetActionPassTurnOrWalk(&monster->action, monster->id.val);
+        monster->target_pos.x = monster->pos.x;
+        monster->target_pos.y = 0;
+      }
+    }
+
     return;
   }
   
@@ -523,7 +536,7 @@ bool __attribute__((used)) CustomApplyTrapEffect(struct trap* trap, struct entit
     struct dungeon_npc_entry entry;
     if (FindDungeonNpcEntry(&entry, monster->id.val)) {
       if (entry.npc_type == NPC_TYPE_PUSH_TO_TRAP && trap_id == entry.parameter1) {
-        ClearNPCQuest(&entry, target);
+        ClearNPCQuest(&entry, target, true);
       }
     }
   }
@@ -598,7 +611,7 @@ void __attribute__((used)) CustomTalkBazaarPokemon(undefined4 unknown, struct en
       [[fallthrough]]
     case NPC_TYPE_PUSH_TO_POKEMON:
       if (result == 1) {
-        monster->joined_at.val = DUNGEON_CLIENT; // Enable pushing (why)
+        monster->joined_at.val = DUNGEON_JOINED_AT_BIDOOF; // Enable pushing (why)
         monster->is_ally = true;
         monster->statuses.monster_behavior.val = BEHAVIOR_ALLY;
         monster->tactic.val = TACTIC_WAIT_THERE;
@@ -620,4 +633,29 @@ bool __attribute__((used)) CustomCanMonsterUseItem(struct entity* entity, struct
     }
   }
   return true;
+}
+
+// Remove custom `joined_at` values at the end of the floor because the game would
+// get very funky on subsequent floors
+void __attribute__((used)) OnFloorLoopOver(undefined param_1) {
+  for (int i = 0; i < 20; i++) {
+    struct entity* entity = DUNGEON_PTR->entity_table.header.active_monster_ptrs[i];
+    if (!EntityIsValid(entity)) {
+      break;
+    }
+    struct monster* monster = entity->info;
+    if (monster->joined_at.val == DUNGEON_JOINED_AT_BIDOOF) {
+      monster->joined_at.val = 0;
+    }
+  }
+  FUN_0234b010(param_1); // Original function call
+}
+
+struct tile* __attribute__((used)) HookHandleFaint(struct entity* entity) {
+  // Don't kick the player out of the dungeon when an NPC faints
+  struct monster* monster = entity->info;
+  if (monster->joined_at.val == DUNGEON_JOINED_AT_BIDOOF) {
+    monster->joined_at.val = 0;
+  }
+  return GetTileAtEntity(entity); // Original function call
 }

@@ -115,7 +115,7 @@ static void ItemEther(struct entity* user, struct entity* target) {
 
     if (new_pp > move->pp) {
       move->pp = new_pp;
-      FUN_022e4964(target); // Play animation?
+      ShowPpRestoreEffect(target); // Play animation?
       SubstitutePlaceholderStringTags(0, target, 0);
       LogMessageByIdWithPopupCheckUserTarget(user, target, 3507);
     } else {

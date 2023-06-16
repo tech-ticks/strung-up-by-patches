@@ -150,7 +150,8 @@ static int HandleOpEffect(struct ScriptEngineState* state, bool wait) {
   }
 
   struct entity* entity = GetScriptCharacterByIndex(state, op->chara);
-  PlayEffectAnimationEntity(entity, op->effect, wait, 0, 0, 0, 0, NULL);
+  int field_0x19 = GetEffectAnimationField0x19(op->effect);
+  PlayEffectAnimationEntity(entity, op->effect, wait, field_0x19 && 0xff, 2, 0, -1, NULL);
 
   return sizeof(struct OpEffect);
 }
@@ -191,9 +192,7 @@ static int HandleOpWait(struct ScriptEngineState* state) {
   struct OpWait* op = (struct OpWait*)state->ip;
 
   COT_LOGFMT(LOG_CATEGORY, "OpWait: wait_frames=%d", op->wait_frames);
-  for (int i = 0; i < op->wait_frames; i++) {
-    AdvanceFrame(0);
-  }
+  WaitFrames(op->wait_frames);
 
   return sizeof(struct OpWait);
 }
