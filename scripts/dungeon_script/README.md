@@ -103,7 +103,7 @@ Usage: `takeitem [uint16 item_id]`
 
 Check if the player has at least the given amount of items in the bag (stackable items count as one per stack).
 Sets the condition flag based on the result.
-Usage: `takeitem [uint8 amount]`
+Usage: `checkbagcount [uint8 amount]`
 
 ### 0x2A CheckMove (4 bytes)
 
@@ -116,12 +116,30 @@ Check if `SCENARIO_TALK_BIT_FLAG` on the given index is set.
 Sets the condition flag based on the result.
 Usage: `checktalkflag [uint8 idx]`
 
-### 0x31 SetTalkFlag (2 bytes)
+### 0x31 SetTalkFlag (3 bytes)
 Sets `SCENARIO_TALK_BIT_FLAG` on the given index to the specified value (0 or 1).
 Usage: `settalkflag [uint8 idx] [uint8 value]`
 
-### 0x42 CheckAttacked (3 bytes)
-
+### 0x42 CheckAttacked (2 bytes)
 Check whether the given character has been attacked in dungeons.
 Sets the condition flag based on the result.
 Usage: `checkattacked [uint8 char]`
+
+### 0x43 CheckKeyLost (2 bytes)
+Checks whether the key with the given ID is absent from the inventory or has been used on a key door.
+Sets the condition flag based on the result.
+Usage: `checkkeylost [uint8 key_id]`
+
+### 0x44 RemoveKeyLost (2 bytes)
+Removes the numbered key if it's present somewhere on the floor.
+Usage: `removekeylost [uint8 key_id]`
+
+### 0x45 Warp (2 bytes)
+Warps a character. `type` can be one of the following (see the `warp_type` enum in pmdsky-debug):
+- 0: Warp to a random position
+- 1: Warp within 2 tiles of the stairs
+- 2: Warp within 2 tiles of a specified position
+- 3: Warp to an exact position
+- 4: Warp within 3 tiles of the stairs
+- 5: Warp within 2 tiles of the leader
+Usage: `warp [uint8 chara] [uint8 type] [uint8 x_or_target_chara] [uint8 y]`

@@ -31,6 +31,9 @@
 #define DNOPCODE_SET_TALK_FLAG 0x31
 
 #define DNOPCODE_WAS_ATTACKED 0x42
+#define DNOPCODE_CHECK_KEY_LOST 0x43
+#define DNOPCODE_REMOVE_KEY_LOST 0x44
+#define DNOPCODE_WARP 0x45
 
 #define LOG_CATEGORY "dungeon_script"
 
@@ -325,8 +328,9 @@ static int HandleOpCheckMove(struct ScriptEngineState* state) {
   COT_LOGFMT(LOG_CATEGORY, "OpCheckMove: chara=%d move_id=%d", op->chara, op->move_id);
 
   state->condition_flag = false;
-  struct monster* monster = GetScriptCharacterByIndex(state, op->chara);
-  if (monster) {
+  struct entity* entity = GetScriptCharacterByIndex(state, op->chara);
+  if (entity) {
+    struct monster* monster = entity->info;
     for (int i = 0; i < 4; i++) {
       struct move* move = &monster->moves[i];
       if (move->f_exists && move->id.val == op->move_id) {
@@ -386,6 +390,59 @@ static int HandleOpWasAttacked(struct ScriptEngineState* state) {
   }
 
   return sizeof(struct OpWasAttacked);
+}
+
+static int HandleOpCheckKeyLost(struct ScriptEngineState* state) {
+  struct OpCheckKeyLost {
+    uint8_t key_id;
+  } __attribute__((packed));
+
+  struct OpCheckKeyLost* op = (struct OpCheckKeyLost*)state->ip;
+
+  COT_LOGFMT(LOG_CATEGORY, "OpCheckKeyLost: key_id=%d", op->key_id);
+
+  state->condition_flag = IsKeyLost(op->key_id);
+
+  return sizeof(struct OpCheckKeyLost);
+}
+
+static int HandleOpRemoveKeyLost(struct ScriptEngineState* state) {
+  struct OpRemoveKeyLost {
+    uint8_t key_id;
+  } __attribute__((packed));
+
+  struct OpRemoveKeyLost* op = (struct OpRemoveKeyLost*)state->ip;
+
+  COT_LOGFMT(LOG_CATEGORY, "OpRemoveKeyLost: key_id=%d", op->key_id);
+
+  RemoveKeyLost(op->key_id);
+
+  return sizeof(struct OpRemoveKeyLost);
+}
+
+static int HandleOpWarp(struct ScriptEngineState* state) {
+  struct OpWarp {
+    uint8_t chara;
+    uint8_t type;
+    uint8_t x;
+    uint8_t y;
+  } __attribute__((packed));
+
+  struct OpWarp* op = (struct OpWarp*)state->ip;
+
+  COT_LOGFMT(LOG_CATEGORY, "OpWarp: chara=%d type=%d x=%d y=%d", op->chara, op->type, op->x, op->y);
+
+  struct entity* entity = GetScriptCharacterByIndex(state, op->chara);
+
+  if (entity) {
+    struct position pos = {
+      .x = op->x,
+      .y = op->y,
+    };
+    TryWarp(entity, entity, op->type, &pos);
+  }
+
+  return sizeof(struct OpWarp);
 }
 
 uint8_t RunDungeonScript(char* name, struct entity* npc_monster) {
@@ -493,6 +550,18 @@ uint8_t RunDungeonScript(char* name, struct entity* npc_monster) {
         state.ip += HandleOpWasAttacked(&state);
         break;
       }
+      case DNOPCODE_CHECK_KEY_LOST: {
+        state.ip += HandleOpCheckKeyLost(&state);
+        break;
+      }
+      case DNOPCODE_REMOVE_KEY_LOST: {
+        state.ip += HandleOpRemoveKeyLost(&state);
+        break;
+      }
+      case DNOPCODE_WARP: {
+        state.ip += HandleOpWarp(&state);
+        break;
+      }
 
       default: {
         COT_ERRORFMT(LOG_CATEGORY, "Unknown dungeon script opcode %d", opcode);
@@ -501,5 +570,4 @@ uint8_t RunDungeonScript(char* name, struct entity* npc_monster) {
       }
     }
   }
-
 }

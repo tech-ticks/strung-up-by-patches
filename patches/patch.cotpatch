@@ -96,4 +96,4 @@ FUN_0234b010Callsite+0:
   bl OnFloorLoopOver
 
 HandleFaint+18:
-  bl HookHandleFaint /* Originally a call to GetTileAtEntity */
+  bl HookHandleFaint // Originally a call to GetTileAtEntity

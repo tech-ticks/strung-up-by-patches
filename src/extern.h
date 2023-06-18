@@ -18,7 +18,13 @@ void InitPortraitData(struct portrait_box* portrait_ptr, enum monster_id pokemon
 void TalkBazaarPokemon(undefined4 unknown, struct entity* entity);
 void MinimapRelated(undefined unk1, undefined unk2);
 void FUN_022fb538(struct entity* entity); // unknown
+void FUN_0234b010(undefined param_1);
 void PlayEffectAnimationEntitySimple(struct entity* entity, int effect_id);
+int TargetingCheckFunction(struct entity* user, struct entity* target, int param_3, int param_4);
+
+// From a custom ASM patch
+bool IsKeyLost(int key_id);
+void RemoveKeyLost(int key_id);
 
 static inline void ShowMinimap() {
   MinimapRelated(0, 0);

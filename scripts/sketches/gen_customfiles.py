@@ -66,6 +66,24 @@ npc_data = [
         "parameter1": 0,
         "parameter2": 63, # Abra
     },
+    {
+        "monster_id": 551, # Odd Keystone
+        "script_id": 256,
+        "dungeon_id": DUNGEON_SINKING_SHADOWS,
+        "floor": 1,
+        "npc_type": NPC_TYPE_NORMAL,
+        "parameter1": 0,
+        "parameter2": 0
+    },
+    {
+        "monster_id": 551, # Odd Keystone
+        "script_id": 257,
+        "dungeon_id": DUNGEON_SINKING_SHADOWS,
+        "floor": 13,
+        "npc_type": NPC_TYPE_NORMAL,
+        "parameter1": 0,
+        "parameter2": 0
+    },
 ]
 
 # Open the file in binary write mode

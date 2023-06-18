@@ -51,6 +51,7 @@ ApplyTrapEffectCallsite1 = 0x22ee2c0;
 ApplyTrapEffectCallsite2 = 0x022eefa8;
 ApplyTrapEffectCallsite3 = 0x022ef04c;
 TrapMinimapGraphics = 0x02352FF4; /* Maps each trap to its tile value */
+TargetingCheckFunction = 0x230175c; /* Related to targeting */
 
 DisplayUiCallsite1 = 0x22e33c8;
 DisplayUiCallsite2 = 0x22ea15c;
@@ -62,3 +63,7 @@ CheckFixedRoomItem = 0x02344454;
 CanMonsterUseItemCallsitePlayer = 0x22f537c; /* Called when the player uses an item */
 FUN_0234b010 = 0x0234b010;
 FUN_0234b010Callsite = 0x22dfb30; /* Called after transitioning to another floor */
+
+/* * !file overlay36 */
+IsKeyLost = 0x023dd29c;
+RemoveKeyLost = 0x23dd308;

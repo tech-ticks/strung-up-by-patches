@@ -48,6 +48,9 @@ instructions = {
     "settalkflag": Instruction(0x31, { "idx": TYPE_UINT8, "val": TYPE_UINT8 }),
 
     "checkattacked": Instruction(0x42, { "char": TYPE_UINT8 }),
+    "checkkeylost": Instruction(0x43, { "key_id": TYPE_UINT8 }),
+    "removekeylost": Instruction(0x44, { "key_id": TYPE_UINT8 }),
+    "warp": Instruction(0x45, { "char": TYPE_UINT8, "type": TYPE_UINT8, "x": TYPE_UINT8, "y": TYPE_UINT8 }),
 }
 
 def disassemble_script(binary_data):

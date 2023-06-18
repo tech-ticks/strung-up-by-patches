@@ -14,6 +14,10 @@ static bool IsCurrentDungeonAscending() {
   return DUNGEON_RESTRICTIONS[DUNGEON_PTR->id.val].f_dungeon_goes_up;
 }
 
+static bool ShouldEnableStairsInOtherDirection() {
+  return !IsCurrentDungeonAscending() && DUNGEON_PTR->id.val != DUNGEON_BEACH_CAVE_PIT /* Daunting Doldrums */;
+}
+
 static void ReturnToPreviousFloor() {
   // There are two different sound effects based on whether you go up or down the stairs
   // (inverted here)
@@ -41,9 +45,26 @@ static char* FallbackStairsMenuEntryFunc(char* string_buffer, int option_num) {
 
 // If the stairs in the opposite direction could not be spawned,
 // show a menu to select whether to go up or down.
-bool __attribute__((used)) CustomRunLeaderTurn(undefined param_1) {
+bool __attribute__((used)) CustomRunLeaderTurn(bool is_first_loop) {
   if (FreezePlayer) {
     return false;
+  }
+
+  // Set all dungeon NPCs to the "Bazaar Host" behavior.
+  // Allows assigning stats in SkyTemple by using another behavior (not possible by default)
+  if (is_first_loop) {
+    for (int i = 0; i < 20; i++) {
+      struct entity* entity = DUNGEON_PTR->entity_table.header.active_monster_ptrs[i];
+      if (!EntityIsValid(entity)) {
+        continue;
+      }
+
+      struct monster* monster = entity->info;
+      struct dungeon_npc_entry entry;
+      if (FindDungeonNpcEntry(&entry, monster->id.val)) {
+        monster->statuses.monster_behavior.val = BEHAVIOR_SECRET_BAZAAR_KIRLIA;
+      }
+    }
   }
 
   if (DUNGEON_PTR->stepped_on_stairs && LoadScriptVariableValue(NULL, VAR_PP_ZERO_TRAP_SPAWN_FAILED)) {
@@ -107,7 +128,7 @@ bool __attribute__((used)) CustomRunLeaderTurn(undefined param_1) {
     }
   }
 
-  return RunLeaderTurn(param_1);
+  return RunLeaderTurn(is_first_loop);
 }
 
 static void RunMonsterAiYoullAlwaysFindMe(struct entity* entity, struct monster* monster, undefined param_2) {
@@ -183,6 +204,11 @@ static void ClearNPCQuest(struct dungeon_npc_entry* npc, struct entity* npc_enti
     npc_entity->graphical_direction_mirror0.val = dir;
     npc_entity->graphical_direction_mirror1.val = dir;
   }
+
+  // If the camera's too far away, move it closer
+  if (GetChebyshevDistance(&DUNGEON_PTR->display_data.camera_pos, &npc_entity->pos) > 2) {
+    PointCameraToMonster(npc_entity, 1);
+  }
   
   char script_name_buffer[0x10];
   Snprintf(script_name_buffer, 0x10, "npc_%03d_clear", npc->script_id);
@@ -202,13 +228,24 @@ static void WarpAbra(struct entity* entity, struct monster* monster, struct enti
   litwick->graphical_direction_mirror1.val = dir;
 
   struct monster* litwick_monster = litwick->info;
-  PlayEffectAnimationEntitySimple(&litwick->pos, 91);
+  PlayEffectAnimationEntitySimple(litwick, 91);
   struct portrait_box portrait_box;
   InitPortraitData(&portrait_box, litwick_monster->id.val, 12);
-  PrintDialogue(NULL, &portrait_box, "[CS:G]Abra[CR],[W:10] nooooooooooooooooooooo[VS:2:0]ooooooooooooo![VR][W:10]\nWhere did you go?[W:15]\n[FACE:7]You can't just leave me like this!", true);
+  PrintDialogue(NULL, &portrait_box, "[CS:G]Abra[CR],[W:10] nooooooooo[VS:2:0]ooooooooooooo![VR][W:10]\nWhere did you go?[W:15]\n[FACE:7]You can't just leave me like this!", true);
+  
+  // Turn Abra back into an enemy
+  monster->statuses.monster_behavior.val = BEHAVIOR_NORMAL_ENEMY_0x0;
+  monster->joined_at.val = 0;
+  monster->is_ally = false;
 }
 
 static void CheckWantedPokemonAdjacent(struct entity* entity, struct monster* monster) {
+  // Ensure that the leader is somewhat close so that quests aren't completed by chance off-screen
+  struct entity* leader = GetLeader();
+  if (!EntityIsValid(leader) || GetChebyshevDistance(&entity->pos, &leader->pos) > 6) {
+    return;
+  }
+
   struct dungeon_npc_entry entry;
   if (FindDungeonNpcEntry(&entry, monster->id.val) && entry.npc_type == NPC_TYPE_PUSH_TO_POKEMON) {
     for (int i = 0; i < 20; i++) {
@@ -429,13 +466,13 @@ void __attribute__((used)) CustomSpawnTeam(undefined param_1) {
     .y = DUNGEON_PTR->gen_info.team_spawn_pos.y,
   };
 
-  bool is_descending_dungeon = !IsCurrentDungeonAscending();
+  bool stairs_in_other_direction = ShouldEnableStairsInOtherDirection();
 
   if (GoneBackToPreviousFloor) {
     // If we've descended a floor, spawn the team at the stairs
     DUNGEON_PTR->gen_info.team_spawn_pos.x = DUNGEON_PTR->gen_info.stairs_pos.x;
     DUNGEON_PTR->gen_info.team_spawn_pos.y = DUNGEON_PTR->gen_info.stairs_pos.y;
-  } else if (is_descending_dungeon) {
+  } else if (stairs_in_other_direction) {
     // Try avoiding spawning the team on the stairs
     bool on_top_of_stairs = DUNGEON_PTR->gen_info.team_spawn_pos.x == DUNGEON_PTR->gen_info.stairs_pos.x
       && DUNGEON_PTR->gen_info.team_spawn_pos.y == DUNGEON_PTR->gen_info.stairs_pos.y;
@@ -469,7 +506,7 @@ void __attribute__((used)) CustomSpawnTeam(undefined param_1) {
   }
 
   SpawnTeam(param_1);
-  if (DUNGEON_PTR->floor > 1 && is_descending_dungeon) {
+  if (DUNGEON_PTR->floor > 1 && stairs_in_other_direction) {
     bool spawned = TrySpawnDescendingStairs(trap_spawn_pos);
 
     if (!spawned) {
