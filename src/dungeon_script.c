@@ -43,7 +43,7 @@ struct ScriptEngineState {
   bool condition_flag;
 };
 
-#define SCRIPT_BUFFER_SIZE 0x800
+#define SCRIPT_BUFFER_SIZE 0x950
 static uint8_t SCRIPT_BUFFER[SCRIPT_BUFFER_SIZE];
 
 struct ScriptEngineString {

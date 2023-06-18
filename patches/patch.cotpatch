@@ -97,3 +97,9 @@ FUN_0234b010Callsite+0:
 
 HandleFaint+18:
   bl HookHandleFaint // Originally a call to GetTileAtEntity
+
+MewSpawnCheck+0:
+  mov r0, 0
+  bx lr
+  // Expose `RunDungeonScript` in this otherwise unused function
+  b RunDungeonScript

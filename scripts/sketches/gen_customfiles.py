@@ -37,6 +37,7 @@ DUNGEON_LITTLE_DREAM = 5
 NPC_TYPE_NORMAL = 0
 NPC_TYPE_PUSH_TO_TRAP = 1
 NPC_TYPE_PUSH_TO_POKEMON = 2
+NPC_TYPE_SHOW_MOVE = 3
 
 npc_data = [
     {
@@ -44,9 +45,9 @@ npc_data = [
         "script_id": 0,
         "dungeon_id": DUNGEON_POLYPHONIC_PLAYGROUND,
         "floor": 1,
-        "npc_type": NPC_TYPE_NORMAL,
+        "npc_type": NPC_TYPE_SHOW_MOVE,
         "parameter1": 0,
-        "parameter2": 0
+        "parameter2": 330 # Metronome
     },
     {
         "monster_id": 286, # Mudkip

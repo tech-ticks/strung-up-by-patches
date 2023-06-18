@@ -43,6 +43,68 @@ static char* FallbackStairsMenuEntryFunc(char* string_buffer, int option_num) {
   }
 }
 
+// Helper for making NPCs stationary and executing the script `npc_[num]_clear.dnscrpt`
+// when a quest objective is met
+static void ClearNPCQuest(struct dungeon_npc_entry* npc, struct entity* npc_entity, bool disable_pushing) {
+  struct monster* monster = npc_entity->info;
+  monster->statuses.monster_behavior.val = BEHAVIOR_SECRET_BAZAAR_KIRLIA;
+  if (disable_pushing) {
+    monster->joined_at.val = 0; // Disable pushing again
+  }
+
+  struct entity* leader = GetLeader();
+  if (EntityIsValid(leader)) {
+    // Ensure that the NPC is facing the leader
+    enum direction_id dir = GetDirectionTowardsPosition(&npc_entity->pos, &leader->pos);
+    npc_entity->graphical_direction.val = dir;
+    npc_entity->graphical_direction_mirror0.val = dir;
+    npc_entity->graphical_direction_mirror1.val = dir;
+  }
+
+  // If the camera's too far away, move it closer
+  if (GetChebyshevDistance(&DUNGEON_PTR->display_data.camera_pos, &npc_entity->pos) > 2) {
+    PointCameraToMonster(npc_entity, 1);
+  }
+  
+  char script_name_buffer[0x10];
+  Snprintf(script_name_buffer, 0x10, "npc_%03d_clear", npc->script_id);
+  RunDungeonScript(script_name_buffer, npc_entity);
+}
+
+// Check if NPC quests with the `NPC_TYPE_SHOW_MOVE` type where completed
+static void CheckUsedMoveForNpc(void) {
+  int move_id = -1;
+  struct dungeon_npc_entry npc;
+  struct entity* npc_entity = NULL;
+  for (int i = 0; i < 20; i++) {
+    npc_entity = DUNGEON_PTR->entity_table.header.active_monster_ptrs[i];
+    if (!EntityIsValid(npc_entity)) {
+      continue;
+    }
+
+    struct monster* monster = npc_entity->info;
+    if (FindDungeonNpcEntry(&npc, monster->id.val) && npc.npc_type == NPC_TYPE_SHOW_MOVE && HasMonsterBeenAttackedInDungeons(monster->id.val)) {
+      move_id = npc.parameter2;
+    }
+  }
+
+  if (npc_entity == NULL) {
+    return;
+  }
+
+  struct entity* leader = GetLeader();
+  if (EntityIsValid(leader)) {
+    struct monster* monster = leader->info;
+    for (int i = 0; i < 4; i++) {
+      struct move* move = &monster->moves[i];
+      if (move->id.val == move_id && move->f_last_used) {
+        ClearNPCQuest(&npc, npc_entity, false);
+        break;
+      }
+    }
+  }
+}
+
 // If the stairs in the opposite direction could not be spawned,
 // show a menu to select whether to go up or down.
 bool __attribute__((used)) CustomRunLeaderTurn(bool is_first_loop) {
@@ -128,7 +190,9 @@ bool __attribute__((used)) CustomRunLeaderTurn(bool is_first_loop) {
     }
   }
 
-  return RunLeaderTurn(is_first_loop);
+  bool result = RunLeaderTurn(is_first_loop);
+  CheckUsedMoveForNpc();
+  return result;
 }
 
 static void RunMonsterAiYoullAlwaysFindMe(struct entity* entity, struct monster* monster, undefined param_2) {
@@ -185,34 +249,6 @@ static void RunMonsterAiRockSmash(struct entity* entity, struct monster* monster
   }
 
   return RunMonsterAi(entity, param_2);
-}
-
-// Helper for making NPCs stationary and executing the script `npc_[num]_clear.dnscrpt`
-// when a quest objective is met
-static void ClearNPCQuest(struct dungeon_npc_entry* npc, struct entity* npc_entity, bool disable_pushing) {
-  struct monster* monster = npc_entity->info;
-  monster->statuses.monster_behavior.val = BEHAVIOR_SECRET_BAZAAR_KIRLIA;
-  if (disable_pushing) {
-    monster->joined_at.val = 0; // Disable pushing again
-  }
-
-  struct entity* leader = GetLeader();
-  if (EntityIsValid(leader)) {
-    // Ensure that the NPC is facing the leader
-    enum direction_id dir = GetDirectionTowardsPosition(&npc_entity->pos, &leader->pos);
-    npc_entity->graphical_direction.val = dir;
-    npc_entity->graphical_direction_mirror0.val = dir;
-    npc_entity->graphical_direction_mirror1.val = dir;
-  }
-
-  // If the camera's too far away, move it closer
-  if (GetChebyshevDistance(&DUNGEON_PTR->display_data.camera_pos, &npc_entity->pos) > 2) {
-    PointCameraToMonster(npc_entity, 1);
-  }
-  
-  char script_name_buffer[0x10];
-  Snprintf(script_name_buffer, 0x10, "npc_%03d_clear", npc->script_id);
-  RunDungeonScript(script_name_buffer, npc_entity);
 }
 
 static void WarpAbra(struct entity* entity, struct monster* monster, struct entity* litwick) {
