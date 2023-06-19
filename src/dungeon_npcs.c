@@ -35,12 +35,11 @@ void LoadDungeonNpcs(enum dungeon_id dungeon_id) {
 }
 
 // Get the dungeon NPC entry for the given monster ID on the current floor
-bool FindDungeonNpcEntry(struct dungeon_npc_entry* entry, uint16_t monster_id) {
+struct dungeon_npc_entry* FindDungeonNpcEntry(uint16_t monster_id) {
   for (int i = 0; i < ARRAY_COUNT(DUNGEON_NPCS); i++) {
     if (DUNGEON_NPCS[i].monster_id == FemaleToMaleForm(monster_id) && DUNGEON_NPCS[i].floor == DUNGEON_PTR->floor) {
-      *entry = DUNGEON_NPCS[i];
-      return true;
+      return &DUNGEON_NPCS[i];
     }
   }
-  return false;
+  return NULL;
 }

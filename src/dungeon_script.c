@@ -43,15 +43,20 @@ struct ScriptEngineState {
   bool condition_flag;
 };
 
-#define SCRIPT_BUFFER_SIZE 0x950
-static uint8_t SCRIPT_BUFFER[SCRIPT_BUFFER_SIZE];
+// #define SCRIPT_BUFFER_SIZE 0x940
+// static uint8_t SCRIPT_BUFFER[SCRIPT_BUFFER_SIZE];
 
 struct ScriptEngineString {
   uint16_t length;
   char chars[];
 } __attribute__((packed));
 
-static bool LoadDungeonScriptToBuffer(char* name) {
+struct DungeonScriptBuffer {
+  void* data; // Must be released with `MemFree`!
+  int size;
+};
+
+static bool LoadDungeonScriptToBuffer(char* name, struct DungeonScriptBuffer* buffer) {
   struct file_stream file;
   char file_name_buffer[0x40];
   Snprintf(file_name_buffer, 0x40, "SKETCHES/DNSCRPT/%s.dnscrpt", name);
@@ -60,21 +65,25 @@ static bool LoadDungeonScriptToBuffer(char* name) {
   FileOpen(&file, file_name_buffer);
 
   int size = FileGetSize(&file);
-  if (size > SCRIPT_BUFFER_SIZE) {
+  /*if (size > SCRIPT_BUFFER_SIZE) {
     COT_ERRORFMT(LOG_CATEGORY, "Dungeon script too large: '%s'", file_name_buffer);
     FileClose(&file);
     DataTransferStop();
-    return false;
-  }
+    return NULL;
+  }*/
+  void* script_buffer = MemAlloc(size, 0);
 
-  int read_bytes = FileRead(&file, (void*)SCRIPT_BUFFER, size);
+  int read_bytes = FileRead(&file, script_buffer, size);
   FileClose(&file);
   DataTransferStop();
   if (read_bytes <= 0) {
     COT_ERRORFMT(LOG_CATEGORY, "Failed to load dungeon script '%s'", file_name_buffer);
+    MemFree(script_buffer);
     return false;
   }
 
+  buffer->data = script_buffer;
+  buffer->size = size;
   return true;
 }
 
@@ -446,13 +455,14 @@ static int HandleOpWarp(struct ScriptEngineState* state) {
 }
 
 uint8_t RunDungeonScript(char* name, struct entity* npc_monster) {
-  if (!LoadDungeonScriptToBuffer(name)) {
+  struct DungeonScriptBuffer script_buffer;
+  if (!LoadDungeonScriptToBuffer(name, &script_buffer)) {
     LogMessage(NULL, "Failed to load dungeon script", true);
     return 0;
   }
 
   struct ScriptEngineState state = {
-    .ip = SCRIPT_BUFFER,
+    .ip = script_buffer.data,
     .npc_monster = npc_monster,
     .condition_flag = false,
   };
@@ -460,15 +470,16 @@ uint8_t RunDungeonScript(char* name, struct entity* npc_monster) {
   while (true) {
     uint8_t opcode = *(uint8_t*)state.ip;
     state.ip += 1;
-    if ((uint8_t*) state.ip >= SCRIPT_BUFFER + 0x400) {
+    if ((uint8_t*) state.ip >= (uint8_t*)script_buffer.data + script_buffer.size) {
       COT_ERROR(LOG_CATEGORY, "Dungeon script out of bounds");
       WaitForever();
     }
 
     switch(opcode) {
       case DNOPCODE_END: {
-        return HandleOpEnd(&state);
-        break;
+        int result = HandleOpEnd(&state);
+        MemFree(script_buffer.data);
+        return result;
       }
       case DNOPCODE_DIALOGUE: {
         state.ip += HandleOpDialogue(&state, false);

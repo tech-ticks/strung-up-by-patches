@@ -32,6 +32,7 @@ bool GiveItem(enum item_id item_id, int quantity) {
 
         if (!item->f_exists) {
             InitItem(item, item_id, quantity, false);
+            item->quantity = quantity; // Doesn't work on keys by default for some reason
             return true;
         }
     }

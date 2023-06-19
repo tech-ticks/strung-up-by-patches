@@ -50,10 +50,19 @@ npc_data = [
         "parameter2": 330 # Metronome
     },
     {
+        "monster_id": 488, # Munchlax
+        "script_id": 3,
+        "dungeon_id": DUNGEON_POLYPHONIC_PLAYGROUND,
+        "floor": 2,
+        "npc_type": NPC_TYPE_NORMAL,
+        "parameter1": 0,
+        "parameter2": 0
+    },
+    {
         "monster_id": 286, # Mudkip
         "script_id": 1,
         "dungeon_id": DUNGEON_POLYPHONIC_PLAYGROUND,
-        "floor": 2,
+        "floor": 3,
         "npc_type": NPC_TYPE_PUSH_TO_TRAP,
         "parameter1": TRAP_MUD_TRAP,
         "parameter2": 0
@@ -62,7 +71,7 @@ npc_data = [
         "monster_id": 539, # Litwick
         "script_id": 2,
         "dungeon_id": DUNGEON_POLYPHONIC_PLAYGROUND,
-        "floor": 3,
+        "floor": 4,
         "npc_type": NPC_TYPE_PUSH_TO_POKEMON,
         "parameter1": 0,
         "parameter2": 63, # Abra
@@ -81,6 +90,42 @@ npc_data = [
         "script_id": 257,
         "dungeon_id": DUNGEON_SINKING_SHADOWS,
         "floor": 13,
+        "npc_type": NPC_TYPE_NORMAL,
+        "parameter1": 0,
+        "parameter2": 0
+    },
+    {
+        "monster_id": 28, # Sandslash (male)
+        "script_id": 260,
+        "dungeon_id": DUNGEON_DAUNTING_DOLDRUMS,
+        "floor": 2,
+        "npc_type": NPC_TYPE_NORMAL,
+        "parameter1": 0,
+        "parameter2": 0
+    },
+    {
+        "monster_id": 28, # Sandslash (female)
+        "script_id": 261,
+        "dungeon_id": DUNGEON_DAUNTING_DOLDRUMS,
+        "floor": 9,
+        "npc_type": NPC_TYPE_NORMAL,
+        "parameter1": 0,
+        "parameter2": 0
+    },
+    {
+        "monster_id": 27, # Sandshrew (male)
+        "script_id": 262,
+        "dungeon_id": DUNGEON_DAUNTING_DOLDRUMS,
+        "floor": 8,
+        "npc_type": NPC_TYPE_NORMAL,
+        "parameter1": 0,
+        "parameter2": 0
+    },
+    {
+        "monster_id": 27, # Sandshrew (female)
+        "script_id": 263,
+        "dungeon_id": DUNGEON_DAUNTING_DOLDRUMS,
+        "floor": 7,
         "npc_type": NPC_TYPE_NORMAL,
         "parameter1": 0,
         "parameter2": 0

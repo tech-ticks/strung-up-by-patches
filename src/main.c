@@ -51,6 +51,7 @@ static void ClearNPCQuest(struct dungeon_npc_entry* npc, struct entity* npc_enti
   if (disable_pushing) {
     monster->joined_at.val = 0; // Disable pushing again
   }
+  npc->npc_type = NPC_TYPE_NORMAL;
 
   struct entity* leader = GetLeader();
   if (EntityIsValid(leader)) {
@@ -74,21 +75,23 @@ static void ClearNPCQuest(struct dungeon_npc_entry* npc, struct entity* npc_enti
 // Check if NPC quests with the `NPC_TYPE_SHOW_MOVE` type where completed
 static void CheckUsedMoveForNpc(void) {
   int move_id = -1;
-  struct dungeon_npc_entry npc;
   struct entity* npc_entity = NULL;
+  struct dungeon_npc_entry* npc = NULL;
   for (int i = 0; i < 20; i++) {
-    npc_entity = DUNGEON_PTR->entity_table.header.active_monster_ptrs[i];
-    if (!EntityIsValid(npc_entity)) {
+    struct entity* entity = DUNGEON_PTR->entity_table.header.active_monster_ptrs[i];
+    if (!EntityIsValid(entity)) {
       continue;
     }
 
-    struct monster* monster = npc_entity->info;
-    if (FindDungeonNpcEntry(&npc, monster->id.val) && npc.npc_type == NPC_TYPE_SHOW_MOVE && HasMonsterBeenAttackedInDungeons(monster->id.val)) {
-      move_id = npc.parameter2;
+    struct monster* monster = entity->info;
+    npc = FindDungeonNpcEntry(monster->id.val);
+    if (npc != NULL && npc->npc_type == NPC_TYPE_SHOW_MOVE && HasMonsterBeenAttackedInDungeons(monster->id.val)) {
+      npc_entity = entity;
+      move_id = npc->parameter2;
     }
   }
 
-  if (npc_entity == NULL) {
+  if (move_id == -1 || npc_entity == NULL) {
     return;
   }
 
@@ -98,7 +101,7 @@ static void CheckUsedMoveForNpc(void) {
     for (int i = 0; i < 4; i++) {
       struct move* move = &monster->moves[i];
       if (move->id.val == move_id && move->f_last_used) {
-        ClearNPCQuest(&npc, npc_entity, false);
+        ClearNPCQuest(npc, npc_entity, true);
         break;
       }
     }
@@ -122,8 +125,8 @@ bool __attribute__((used)) CustomRunLeaderTurn(bool is_first_loop) {
       }
 
       struct monster* monster = entity->info;
-      struct dungeon_npc_entry entry;
-      if (FindDungeonNpcEntry(&entry, monster->id.val)) {
+      struct dungeon_npc_entry* entry = FindDungeonNpcEntry(monster->id.val);
+      if (entry != NULL) {
         monster->statuses.monster_behavior.val = BEHAVIOR_SECRET_BAZAAR_KIRLIA;
       }
     }
@@ -282,8 +285,8 @@ static void CheckWantedPokemonAdjacent(struct entity* entity, struct monster* mo
     return;
   }
 
-  struct dungeon_npc_entry entry;
-  if (FindDungeonNpcEntry(&entry, monster->id.val) && entry.npc_type == NPC_TYPE_PUSH_TO_POKEMON) {
+  struct dungeon_npc_entry* entry = FindDungeonNpcEntry(monster->id.val);
+  if (entry != NULL && entry->npc_type == NPC_TYPE_PUSH_TO_POKEMON) {
     for (int i = 0; i < 20; i++) {
       struct entity* other_entity = DUNGEON_PTR->entity_table.header.active_monster_ptrs[i];
       if (!EntityIsValid(other_entity)) {
@@ -295,9 +298,9 @@ static void CheckWantedPokemonAdjacent(struct entity* entity, struct monster* mo
       // The monster ID might be changed to the female form
       int other_monster_id = FemaleToMaleForm(other_monster->id.val);
       if (AreEntitiesAdjacent(entity, other_entity)
-          && other_monster_id == entry.parameter2
+          && other_monster_id == entry->parameter2
           && HasMonsterBeenAttackedInDungeons(other_monster_id)) {
-        ClearNPCQuest(&entry, entity, false);
+        ClearNPCQuest(entry, entity, true);
         other_monster->statuses.monster_behavior.val = BEHAVIOR_SECRET_BAZAAR_KIRLIA;
         other_monster->joined_at.val = DUNGEON_JOINED_AT_BIDOOF;
         other_monster->is_ally = true;
@@ -326,10 +329,9 @@ void __attribute__((used)) CustomRunMonsterAi(struct entity* entity, undefined p
 
     // Special behavior for Togetic on the first floor of Polyphonic Playground
     if (DUNGEON_PTR->id.val == DUNGEON_DRENCHED_BLUFF && DUNGEON_PTR->floor == 1
-        && monster->id.val == MONSTER_TOGETIC) {
-      struct monster* monster = entity->info;
+        && FemaleToMaleForm(monster->id.val) == MONSTER_TOGETIC) {
       struct entity* leader = GetLeader();
-      if (monster->id.val == MONSTER_TOGETIC && leader->pos.y < 14) {
+      if (leader->pos.y < 14) {
         if (entity->pos.y == 11) {
           PlayEffectAnimationEntitySimple(entity, 25);
           WaitFrames(30);
@@ -606,10 +608,10 @@ bool __attribute__((used)) CustomApplyTrapEffect(struct trap* trap, struct entit
   if (IsMonster(target)) {
     struct monster* monster = target->info;
 
-    struct dungeon_npc_entry entry;
-    if (FindDungeonNpcEntry(&entry, monster->id.val)) {
-      if (entry.npc_type == NPC_TYPE_PUSH_TO_TRAP && trap_id == entry.parameter1) {
-        ClearNPCQuest(&entry, target, true);
+    struct dungeon_npc_entry* entry = FindDungeonNpcEntry(monster->id.val);
+    if (entry != NULL) {
+      if (entry->npc_type == NPC_TYPE_PUSH_TO_TRAP && trap_id == entry->parameter1) {
+        ClearNPCQuest(entry, target, true);
       }
     }
   }
@@ -661,23 +663,23 @@ void __attribute__((used)) CustomTalkBazaarPokemon(undefined4 unknown, struct en
     return TalkBazaarPokemon(unknown, entity);
   }
 
-  struct dungeon_npc_entry entry;
-  if (!FindDungeonNpcEntry(&entry, monster->id.val)) {
+  struct dungeon_npc_entry* entry = FindDungeonNpcEntry(monster->id.val);
+  if (entry == NULL) {
     return TalkBazaarPokemon(unknown, entity);
   }
 
   char script_name_buffer[0x10];
-  Snprintf(script_name_buffer, 0x10, "npc_%03d", entry.script_id);
+  Snprintf(script_name_buffer, 0x10, "npc_%03d", entry->script_id);
 
   int result = RunDungeonScript(script_name_buffer, entity);
-  switch (entry.npc_type) {
+  switch (entry->npc_type) {
     case NPC_TYPE_NORMAL:
       break;
     case NPC_TYPE_PUSH_TO_TRAP:
       // Stupid hack: ensure that the NPC is actually affected by the trap
       for (int i = 0; i < 64; i++) {
         struct trap* trap = &DUNGEON_PTR->traps[i];
-        if (trap->id.val == entry.parameter1) {
+        if (trap->id.val == entry->parameter1) {
           trap->team = 1;
         }
       }
