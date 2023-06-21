@@ -15,7 +15,8 @@ static bool IsCurrentDungeonAscending() {
 }
 
 static bool ShouldEnableStairsInOtherDirection() {
-  return !IsCurrentDungeonAscending() && DUNGEON_PTR->id.val != DUNGEON_BEACH_CAVE_PIT /* Daunting Doldrums */;
+  return !IsCurrentDungeonAscending() && DUNGEON_PTR->id.val != DUNGEON_BEACH_CAVE_PIT /* Daunting Doldrums */
+    && !(DUNGEON_PTR->id.val == DUNGEON_DRENCHED_BLUFF /* Polyphonic Playground */ && DUNGEON_PTR->floor == 8);
 }
 
 static void ReturnToPreviousFloor() {
@@ -36,7 +37,7 @@ static char* FallbackStairsMenuEntryFunc(char* string_buffer, int option_num) {
   switch (option_num) {
     case 0:
       return "Go up to the previous floor";
-    case 1:
+    case 1: 
       return "Go down to the next floor";
     default:
       return "Cancel";
@@ -128,6 +129,34 @@ bool __attribute__((used)) CustomRunLeaderTurn(bool is_first_loop) {
       struct dungeon_npc_entry* entry = FindDungeonNpcEntry(monster->id.val);
       if (entry != NULL) {
         monster->statuses.monster_behavior.val = BEHAVIOR_SECRET_BAZAAR_KIRLIA;
+
+        if (entry->npc_type == NPC_TYPE_ALWAYS_PUSHABLE) {
+          monster->joined_at.val = DUNGEON_JOINED_AT_BIDOOF;
+          monster->is_ally = true;
+          monster->statuses.monster_behavior.val = BEHAVIOR_ALLY;
+        }
+      }
+
+      if (DUNGEON_PTR->id.val == DUNGEON_MT_BRISTLE_PEAK /* Little Dream */ && FemaleToMaleForm(monster->id.val) == MONSTER_HITMONCHAN) {
+        // Ensure that Hitmonchan in Little Dream have Rock Smash
+        bool has_rock_smash = false;
+        for (int i = 0; i < 4; i++) {
+          struct move* move = &monster->moves[i];
+          if (move->f_exists && move->id.val == MOVE_ROCK_SMASH) {
+            has_rock_smash = true;
+            break;
+          }
+        }
+
+        if (!has_rock_smash) {
+          InitMove(&monster->moves[0], MOVE_ROCK_SMASH);
+        }
+      }
+
+      if (FemaleToMaleForm(monster->id.val) == 542 /* Doll used in Little Dream B5F */) {
+        monster->joined_at.val = DUNGEON_JOINED_AT_BIDOOF;
+        monster->is_ally = true;
+        monster->statuses.monster_behavior.val = BEHAVIOR_ALLY;
       }
     }
   }
@@ -296,19 +325,21 @@ static void CheckWantedPokemonAdjacent(struct entity* entity, struct monster* mo
       struct monster* other_monster = other_entity->info;
 
       // The monster ID might be changed to the female form
-      int other_monster_id = FemaleToMaleForm(other_monster->id.val);
+      int other_monster_id = FemaleToMaleForm(other_monster->apparent_id.val);
       if (AreEntitiesAdjacent(entity, other_entity)
           && other_monster_id == entry->parameter2
           && HasMonsterBeenAttackedInDungeons(other_monster_id)) {
         ClearNPCQuest(entry, entity, true);
-        other_monster->statuses.monster_behavior.val = BEHAVIOR_SECRET_BAZAAR_KIRLIA;
-        other_monster->joined_at.val = DUNGEON_JOINED_AT_BIDOOF;
-        other_monster->is_ally = true;
+        if (monster->is_not_team_member) {
+          other_monster->statuses.monster_behavior.val = BEHAVIOR_SECRET_BAZAAR_KIRLIA;
+          other_monster->joined_at.val = DUNGEON_JOINED_AT_BIDOOF;
+          other_monster->is_ally = true;
 
-        // Abra go warp
-        if (FemaleToMaleForm(other_monster_id) == MONSTER_ABRA) {
-          WarpAbra(other_entity, other_monster, entity);
-          return;
+          // Abra go warp
+          if (FemaleToMaleForm(other_monster_id) == MONSTER_ABRA) {
+            WarpAbra(other_entity, other_monster, entity);
+            return;
+          }
         }
       }
     }
@@ -366,9 +397,10 @@ void __attribute__((used)) CustomRunMonsterAi(struct entity* entity, undefined p
     return RunMonsterAiYoullAlwaysFindMe(entity, monster, param_2);
   }
 
-  if (monster->is_not_team_member && !monster->ai_targeting_enemy) {
+  // The targeting flag seems to be always active on the first floor of Little Dream, so bypass it to progress
+  if (monster->is_not_team_member && (!monster->ai_targeting_enemy || (DUNGEON_PTR->id.val == DUNGEON_MT_BRISTLE_PEAK && DUNGEON_PTR->floor == 1))) {
     for (int i = 0; i < 4; i++) {
-      if (monster->moves[i].id.val == MOVE_ROCK_SMASH) {
+      if (monster->moves[i].f_exists && monster->moves[i].id.val == MOVE_ROCK_SMASH) {
         if (DungeonRandInt(2) == 0) {
           return RunMonsterAiRockSmash(entity, monster, param_2, i);
         }
@@ -380,7 +412,8 @@ void __attribute__((used)) CustomRunMonsterAi(struct entity* entity, undefined p
 }
 
 static bool ShouldUseLayoutWithoutHallways() {
-  return DUNGEON_PTR->id.val == DUNGEON_DESTINY_TOWER && DUNGEON_PTR->floor == 99;
+  // Use the layout without hallways on Little Dream B2F
+  return DUNGEON_PTR->id.val == DUNGEON_MT_BRISTLE_PEAK && DUNGEON_PTR->floor == 2;
 }
 
 void __attribute__((naked)) TrampolineCallOriginalCreateHallway(int x0, int y0, int x1, int y1, bool vertical, int x_mid, int y_mid) {
@@ -506,8 +539,10 @@ void __attribute__((used)) CustomSpawnTeam(undefined param_1) {
 
   bool stairs_in_other_direction = ShouldEnableStairsInOtherDirection();
 
-  if (GoneBackToPreviousFloor) {
+  if (GoneBackToPreviousFloor ||
+      (DUNGEON_PTR->id.val ==  DUNGEON_BEACH_CAVE_PIT /* Daunting Doldrums */ && DUNGEON_PTR->floor == 5)) {
     // If we've descended a floor, spawn the team at the stairs
+    // There's also a special case for Daunting Doldrums 5F, where the team is spawned at the stairs
     DUNGEON_PTR->gen_info.team_spawn_pos.x = DUNGEON_PTR->gen_info.stairs_pos.x;
     DUNGEON_PTR->gen_info.team_spawn_pos.y = DUNGEON_PTR->gen_info.stairs_pos.y;
   } else if (stairs_in_other_direction) {
@@ -654,10 +689,11 @@ void __attribute__((used)) CustomDisplayUi() {
   }
 }
 
-void __attribute__((used)) CustomTalkBazaarPokemon(undefined4 unknown, struct entity* entity) {  
+void __attribute__((used)) CustomTalkBazaarPokemon(undefined4 unknown, struct entity* entity) {
   if (!IsMonster(entity)) {
     return TalkBazaarPokemon(unknown, entity);
   }
+
   struct monster* monster = entity->info;
   if (monster->statuses.monster_behavior.val != BEHAVIOR_SECRET_BAZAAR_KIRLIA) {
     return TalkBazaarPokemon(unknown, entity);
@@ -677,12 +713,12 @@ void __attribute__((used)) CustomTalkBazaarPokemon(undefined4 unknown, struct en
       break;
     case NPC_TYPE_PUSH_TO_TRAP:
       // Stupid hack: ensure that the NPC is actually affected by the trap
-      for (int i = 0; i < 64; i++) {
+      /*for (int i = 0; i < 64; i++) {
         struct trap* trap = &DUNGEON_PTR->traps[i];
         if (trap->id.val == entry->parameter1) {
           trap->team = 1;
         }
-      }
+      }*/
       [[fallthrough]]
     case NPC_TYPE_PUSH_TO_POKEMON:
       if (result == 1) {
@@ -693,10 +729,6 @@ void __attribute__((used)) CustomTalkBazaarPokemon(undefined4 unknown, struct en
       }
       break;
   }
-}
-
-bool __attribute__((used)) ShouldConvertWallsToChasms() {
-  return DUNGEON_PTR->id.val == DUNGEON_BEACH_CAVE;
 }
 
 bool __attribute__((used)) CustomCanMonsterUseItem(struct entity* entity, struct item* item) {
@@ -733,4 +765,37 @@ struct tile* __attribute__((used)) HookHandleFaint(struct entity* entity) {
     monster->joined_at.val = 0;
   }
   return GetTileAtEntity(entity); // Original function call
+}
+
+void __attribute__((used)) CustomSpawnStairs(uint8_t* pos, struct dungeon_generation_info* gen_info, enum hidden_stairs_type stairs_type) {
+  if ((DUNGEON_PTR->floor == 7 && DUNGEON_PTR->id.val == DUNGEON_DRENCHED_BLUFF) || (DUNGEON_PTR->floor == 5 && DUNGEON_PTR->id.val == DUNGEON_MT_BRISTLE_PEAK)) {
+    // There's no going down further in the seventh floor of Polyphonic Playground and the fifth floor of Little Dream
+    return;
+  }
+  SpawnStairs(pos, gen_info, stairs_type);
+}
+
+struct entity* entity_to_transform_into = NULL;
+
+bool  __attribute__((used)) CustomDoMoveTransform(struct entity* attacker, struct entity* defender, struct move* move, enum item_id item_id) {
+if (IsMonster(defender)) {
+    struct monster* monster = defender->info;
+    if (!HasMonsterBeenAttackedInDungeons(monster->id.val) && FemaleToMaleForm(monster->id.val) != MONSTER_SMEARGLE) {
+      LogMessage(attacker, "You can't transform into a [CS:K]Figment[CR]!", true);
+      return false;
+    }
+  }
+  // The Pokémon who uses the move is the one transforming, so we need to pass it twice
+  // for the correct behavior
+  entity_to_transform_into = defender;
+  TryTransform(attacker, attacker);
+  return true;
+}
+
+enum monster_id  __attribute__((used)) GetTransformMonsterId(struct entity* entity) {
+  if (entity_to_transform_into != NULL) {
+    struct monster* monster = entity_to_transform_into->info;
+    return monster->id.val;
+  }
+  return MONSTER_DECOY;
 }

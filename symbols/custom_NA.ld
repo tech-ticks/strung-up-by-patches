@@ -63,6 +63,15 @@ CheckFixedRoomItem = 0x02344454;
 CanMonsterUseItemCallsitePlayer = 0x22f537c; /* Called when the player uses an item */
 FUN_0234b010 = 0x0234b010;
 FUN_0234b010Callsite = 0x22dfb30; /* Called after transitioning to another floor */
+SpawnStairsCallsite = 0x2340e34;
+
+TrapTeamCheck = 0x02305790;
+TransformFixedRoomCheck = 0x232b458;
+DoMoveTransform = 0x232b44c;
+GetMonsterIdFromSpawnEntryCallsite = 0x23172cc;
+RestoreMovePPOnFaint1 = 0x2309ef8;
+RestoreMovePPOnFaint2 = 0x0230a1c8;
+RestoreMovePPOnFaint3 = 0x230a410;
 
 /* * !file overlay36 */
 IsKeyLost = 0x023dd29c;

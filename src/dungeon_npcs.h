@@ -9,6 +9,7 @@
 #define NPC_TYPE_PUSH_TO_TRAP 1
 #define NPC_TYPE_PUSH_TO_POKEMON 2
 #define NPC_TYPE_SHOW_MOVE 3
+#define NPC_TYPE_ALWAYS_PUSHABLE 4
 
 struct dungeon_npc_entry {
   uint16_t monster_id;

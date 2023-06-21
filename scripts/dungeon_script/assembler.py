@@ -51,6 +51,8 @@ instructions = {
     "checkkeylost": Instruction(0x43, { "key_id": TYPE_UINT8 }),
     "removekeylost": Instruction(0x44, { "key_id": TYPE_UINT8 }),
     "warp": Instruction(0x45, { "char": TYPE_UINT8, "type": TYPE_UINT8, "x": TYPE_UINT8, "y": TYPE_UINT8 }),
+    "checkapparentspecies": Instruction(0x46, { "char": TYPE_UINT8, "species": TYPE_UINT16 }),
+    "setnextfloorflag": Instruction(0x47, {}),
 }
 
 def disassemble_script(binary_data):

@@ -143,3 +143,12 @@ Warps a character. `type` can be one of the following (see the `warp_type` enum 
 - 4: Warp within 3 tiles of the stairs
 - 5: Warp within 2 tiles of the leader
 Usage: `warp [uint8 chara] [uint8 type] [uint8 x_or_target_chara] [uint8 y]`
+
+### 0x46 CheckApparentSpecies (4 bytes)
+Checks if the given character has a specific species. The apparent species is checked, which is different from the actual species when using Transform.
+Sets the condition flag based on the result.
+Usage: `checkapparentspecies [uint8 chara] [uint16 species]`
+
+### 0x47 SetNextFloorFlag (1 bytes)
+Sets the flag to advance to the next floor.
+Usage: `setnextfloorflag`

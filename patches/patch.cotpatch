@@ -103,3 +103,44 @@ MewSpawnCheck+0:
   bx lr
   // Expose `RunDungeonScript` in this otherwise unused function
   b RunDungeonScript
+
+SpawnStairsCallsite+0:
+  bl CustomSpawnStairs
+
+// Allow Transform in fixed rooms. Check if the target is a Figment instead.
+DoMoveTransform+0:
+  b CustomDoMoveTransform
+
+GetMonsterIdFromSpawnEntryCallsite+0:
+  bl GetTransformMonsterId
+
+// Disable PP restoration when fainting (Tiny Reviver Seed)
+RestoreMovePPOnFaint1+0:
+  mov r0, r0 // nop
+RestoreMovePPOnFaint2+0:
+  mov r0, r0 // nop
+RestoreMovePPOnFaint3+0:
+  mov r0, r0 // nop
+
+// Make it so that all traps affect everyone
+TrapTeamCheck+0:
+  mov r0, r0
+  mov r0, r0
+  mov r0, r0
+  mov r0, r0
+  mov r0, r0
+  mov r0, r0
+  mov r0, r0
+  mov r0, r0
+  mov r0, r0
+  mov r0, r0
+  mov r0, r0
+  mov r0, r0
+  mov r0, r0
+  mov r0, r0
+  mov r0, r0
+  mov r0, r0
+  mov r0, r0
+  mov r0, r0
+  mov r0, r0
+  mov r6, 1

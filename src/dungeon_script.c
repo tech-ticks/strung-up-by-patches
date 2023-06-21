@@ -34,6 +34,8 @@
 #define DNOPCODE_CHECK_KEY_LOST 0x43
 #define DNOPCODE_REMOVE_KEY_LOST 0x44
 #define DNOPCODE_WARP 0x45
+#define DNOPCODE_CHECK_APPARENT_SPECIES 0x46
+#define DNOPCODE_SET_NEXT_FLOOR_FLAG 0x47
 
 #define LOG_CATEGORY "dungeon_script"
 
@@ -454,6 +456,33 @@ static int HandleOpWarp(struct ScriptEngineState* state) {
   return sizeof(struct OpWarp);
 }
 
+static int HandleOpCheckApparentSpecies(struct ScriptEngineState* state) {
+  struct OpCheckApparentSpecies {
+    uint8_t chara;
+    uint16_t monster_id;
+  } __attribute__((packed));
+
+  struct OpCheckApparentSpecies* op = (struct OpCheckApparentSpecies*)state->ip;
+
+  COT_LOGFMT(LOG_CATEGORY, "OpCheckApparentSpecies: chara=%d monster_id=%d", op->chara, op->monster_id);
+
+  state->condition_flag = false;
+  struct entity* entity = GetScriptCharacterByIndex(state, op->chara);
+  if (entity) {
+    struct monster* monster = entity->info;
+    state->condition_flag = FemaleToMaleForm(monster->apparent_id.val) == FemaleToMaleForm(op->monster_id);
+  }
+
+  return sizeof(struct OpCheckApparentSpecies);
+}
+
+static int HandleOpSetNextFloorFlag(struct ScriptEngineState* state) {
+  COT_LOG(LOG_CATEGORY, "OpSetNextFloorFlag");
+  DUNGEON_PTR->end_floor_flag = true;
+
+  return 0;
+}
+
 uint8_t RunDungeonScript(char* name, struct entity* npc_monster) {
   struct DungeonScriptBuffer script_buffer;
   if (!LoadDungeonScriptToBuffer(name, &script_buffer)) {
@@ -571,6 +600,14 @@ uint8_t RunDungeonScript(char* name, struct entity* npc_monster) {
       }
       case DNOPCODE_WARP: {
         state.ip += HandleOpWarp(&state);
+        break;
+      }
+      case DNOPCODE_CHECK_APPARENT_SPECIES: {
+        state.ip += HandleOpCheckApparentSpecies(&state);
+        break;
+      }
+      case DNOPCODE_SET_NEXT_FLOOR_FLAG: {
+        state.ip += HandleOpSetNextFloorFlag(&state);
         break;
       }
 

@@ -77,6 +77,33 @@ npc_data = [
         "parameter2": 63, # Abra
     },
     {
+        "monster_id": 56, # Mankey
+        "script_id": 4,
+        "dungeon_id": DUNGEON_POLYPHONIC_PLAYGROUND,
+        "floor": 5,
+        "npc_type": NPC_TYPE_PUSH_TO_TRAP,
+        "parameter1": TRAP_CHESTNUT_TRAP,
+        "parameter2": 0,
+    },
+    {
+        "monster_id": 498, # Finneon
+        "script_id": 5,
+        "dungeon_id": DUNGEON_POLYPHONIC_PLAYGROUND,
+        "floor": 6,
+        "npc_type": NPC_TYPE_PUSH_TO_POKEMON,
+        "parameter1": 0,
+        "parameter2": 143, # Snorlax
+    },
+    {
+        "monster_id": 306, # Wingull
+        "script_id": 6,
+        "dungeon_id": DUNGEON_POLYPHONIC_PLAYGROUND,
+        "floor": 7,
+        "npc_type": NPC_TYPE_PUSH_TO_TRAP,
+        "parameter1": 0, # Nothing
+        "parameter2": 0,
+    },
+    {
         "monster_id": 551, # Odd Keystone
         "script_id": 256,
         "dungeon_id": DUNGEON_SINKING_SHADOWS,
@@ -127,6 +154,16 @@ npc_data = [
         "dungeon_id": DUNGEON_DAUNTING_DOLDRUMS,
         "floor": 7,
         "npc_type": NPC_TYPE_NORMAL,
+        "parameter1": 0,
+        "parameter2": 0
+    },
+
+    {
+        "monster_id": 537, # Smeargle
+        "script_id": 42,
+        "dungeon_id": DUNGEON_LITTLE_DREAM,
+        "floor": 5,
+        "npc_type": NPC_TYPE_PUSH_TO_POKEMON,
         "parameter1": 0,
         "parameter2": 0
     },
