@@ -1,4 +1,10 @@
-# c-of-time
+# C patches for Strung Up By Sketches
+
+This repository contains all C code for "Strung Up By Sketches". Please note that this is rushed game jam quality code, and that only my code (techticks') is included.
+
+To use this project, download [Strung Up By Sketches](https://hacks.skytemple.org/h/strungupbysketches), apply the patch to a US ROM and place it under `rom.nds` in the root directory, then continue with the original c-of-time setup instructions linked below.
+
+# Original c-of-time README
 
 An environment for hooking and linking to Pokémon Mystery Dungeon: Explorers of Sky.
 
