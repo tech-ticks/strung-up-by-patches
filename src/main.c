@@ -153,10 +153,15 @@ bool __attribute__((used)) CustomRunLeaderTurn(bool is_first_loop) {
         }
       }
 
-      if (FemaleToMaleForm(monster->id.val) == 542 /* Doll used in Little Dream B5F */) {
-        monster->joined_at.val = DUNGEON_JOINED_AT_BIDOOF;
-        monster->is_ally = true;
-        monster->statuses.monster_behavior.val = BEHAVIOR_ALLY;
+      if (DUNGEON_PTR->id.val == DUNGEON_MT_BRISTLE_PEAK /* Little Dream */ && DUNGEON_PTR->floor == 4) {
+        // Splash breaks Little Dream B4F
+        for (int i = 0; i < 4; i++) {
+          struct move* move = &monster->moves[i];
+          if (move->f_exists && move->id.val == MOVE_SPLASH) {
+            move->f_sealed = true;
+            break;
+          }
+        }
       }
     }
   }
@@ -400,9 +405,29 @@ void __attribute__((used)) CustomRunMonsterAi(struct entity* entity, undefined p
   // The targeting flag seems to be always active on the first floor of Little Dream, so bypass it to progress
   if (monster->is_not_team_member && (!monster->ai_targeting_enemy || (DUNGEON_PTR->id.val == DUNGEON_MT_BRISTLE_PEAK && DUNGEON_PTR->floor == 1))) {
     for (int i = 0; i < 4; i++) {
-      if (monster->moves[i].f_exists && monster->moves[i].id.val == MOVE_ROCK_SMASH) {
-        if (DungeonRandInt(2) == 0) {
-          return RunMonsterAiRockSmash(entity, monster, param_2, i);
+      struct move* move = &monster->moves[i];
+      if (move->f_exists) {
+        if (move->id.val == MOVE_ROCK_SMASH) {
+          if (DungeonRandInt(2) == 0) {
+            return RunMonsterAiRockSmash(entity, monster, param_2, i);
+          }
+        }
+
+        // Don't use Pounce right in front of the player
+        if (move->id.val == MOVE_POUNCE) {
+          struct entity* leader = GetLeader();
+          if (!EntityIsValid(leader)) {
+            continue;
+          }
+
+          bool adjacent = AreEntitiesAdjacent(entity, leader);
+          move->f_enabled_for_ai = !adjacent;
+          // enable/disable all other moves lol I'm tired
+          for (int j = 0; j < 4; j++) {
+            if (j != i) {
+              monster->moves[j].f_enabled_for_ai = adjacent;
+            }
+          }
         }
       }
     }
@@ -780,7 +805,7 @@ struct entity* entity_to_transform_into = NULL;
 bool  __attribute__((used)) CustomDoMoveTransform(struct entity* attacker, struct entity* defender, struct move* move, enum item_id item_id) {
 if (IsMonster(defender)) {
     struct monster* monster = defender->info;
-    if (!HasMonsterBeenAttackedInDungeons(monster->id.val) && FemaleToMaleForm(monster->id.val) != MONSTER_SMEARGLE) {
+    if (!HasMonsterBeenAttackedInDungeons(monster->id.val) && FemaleToMaleForm(monster->id.val) != 537 /* Smeargle (different slot) */) {
       LogMessage(attacker, "You can't transform into a [CS:K]Figment[CR]!", true);
       return false;
     }
@@ -798,4 +823,164 @@ enum monster_id  __attribute__((used)) GetTransformMonsterId(struct entity* enti
     return monster->id.val;
   }
   return MONSTER_DECOY;
+}
+
+struct entity* __attribute__((naked)) TrampolineCallOriginalSpawnMonster(struct spawned_monster_data* monster_data, bool cannot_be_asleep) {
+  asm("stmdb sp!,{r3,r4,r5,r6,r7,lr}"); // Replaced instruction
+  asm("b SpawnMonster+4");
+}
+
+struct entity* __attribute__((used)) HookSpawnMonster(struct spawned_monster_data* monster_data, bool cannot_be_asleep) {
+  if (FemaleToMaleForm(monster_data->monster_id.val) == 542 /* Doll used in Little Dream B5F */) {
+    monster_data->behavior.val = BEHAVIOR_ALLY;
+  }
+  return TrampolineCallOriginalSpawnMonster(monster_data, cannot_be_asleep);
+}
+
+int __attribute__((naked)) TrampolineCallOriginalSetupDBoxFormat(struct advanced_menu_layout* layout, undefined unk) {
+  asm("stmdb sp!,{r4,lr}"); // Replaced instruction
+  asm("b SetupDBoxFormat+4");
+}
+
+int __attribute__((used)) HookSetupDBoxFormat(struct advanced_menu_layout* layout, undefined unk) {
+  if (LoadScriptVariableValueAtIndex(NULL, VAR_SCENARIO_TALK_BIT_FLAG, 252) != 0 && !layout->top_screen) {
+    layout->frame_type = 0xfa; // Transparent
+  }
+  return TrampolineCallOriginalSetupDBoxFormat(layout, unk);
+}
+
+bool __attribute__((used)) CustomDoMovePounce(struct entity* attacker, struct entity* defender, struct move* move,
+                  enum item_id item_id) {
+  TryPounce(attacker, attacker, DIR_CURRENT); // The user must be the one pouncing
+  if (!DealDamage(attacker, defender, move, 0x100, item_id)) {
+    return false;
+  }
+
+  LowerSpeed(attacker, defender, 1, true);
+  return true;
+}
+
+void __attribute__((used)) CustomWarpTrap(struct entity* user, struct entity* target, enum warp_type warp_type,
+             struct position* position) {
+  if (DUNGEON_PTR->id.val == DUNGEON_MT_BRISTLE_PEAK /* Little Dream */ && DUNGEON_PTR->floor == 4) {
+    // Warp to a specific position
+    struct position pos = { .x = 8, .y = 9 };
+    TryWarp(user, target, WARP_POSITION_EXACT, &pos);
+  } else {
+    TryWarp(user, target, warp_type, position);
+  }
+}
+
+bool __attribute__((used)) ShowQuicksaveMessage() {
+  PrintDialogue(NULL, NULL, "Quicksaving is not supported in this game.", true);
+  HideMinimap();
+  return false;
+}
+
+// Same as the original function
+static int GetColorCodePaletteOffsetOriginal(int index) {
+  switch(index) {
+    case 'A':
+      return 0x26;
+    case 'B':
+      return 0x23;
+    case 'C':
+      return 0x19;
+    case 'E':
+      return 0x18;
+    case 'F':
+      return 0x1d;
+    case 'G':
+      return 0x29;
+    case 'H':
+      return 0x2c;
+    case 'I':
+      return 0x26;
+    case 'J':
+      return 0x2d;
+    case 'K':
+      return 0x1f;
+    case 'L':
+      return 0x2b;
+    case 'M':
+      return 0x20;
+    case 'N':
+      return 0x1e;
+    case 'O':
+      return 0x2e;
+    case 'P':
+      return 0x21;
+    case 'Q':
+      return 0x25;
+    case 'R':
+      return 0x2a;
+    case 'S':
+      return 0x24;
+    case 'T':
+      return 0;
+    case 'U':
+      return 0x27;
+    case 'V':
+      return 0x22;
+    case 'W':
+      return 0x1a;
+    case 'X':
+      return 0x1b;
+    case 'Y':
+      return 0x1c;
+    case 'Z':
+      return 0x28;
+    case 0x6a:
+      return 0x21;
+    case 0x72:
+      return 0x15;
+  }
+  return 0x17;
+}
+
+static int GetColorCodePaletteOffsetGrayscale(uint8_t index) {
+   // Intentionally overflow into the `FONT/markfont.dat` palette
+  // (thanks to Irdkwia for the cursed knowledge)
+
+  #define DARK_GRAY 0x83
+  #define GRAY 0x84
+  #define LIGHT_GRAY 0x85
+
+  switch (index) {
+    case 'A':
+    case 'C':
+    case 'F':
+    case 'K':
+    case 'L':
+    case 'M':
+    case 'J':
+    case 'R':
+    case 'X':
+      return LIGHT_GRAY;
+    case 'B':
+    case 'P':
+    case 'Q':
+    case 'S':
+      return DARK_GRAY;
+    case 'E':
+    case 'G':
+    case 'H':
+    case 'I':
+    case 'N':
+    case 'O':
+    case 'Y':
+    case 'Z':
+      return GRAY;
+    case 'T':
+      return 0;
+  }
+  return 0x17; // White
+}
+
+int __attribute__((used)) CustomGetColorCodePaletteOffset(int index) {
+  if (LoadScriptVariableValueAtIndex(NULL, VAR_SCENARIO_TALK_BIT_FLAG, 253) != 0) {
+    return GetColorCodePaletteOffsetGrayscale(index);
+  }
+  
+  return GetColorCodePaletteOffsetOriginal(index);
 }

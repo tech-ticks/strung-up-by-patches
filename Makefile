@@ -66,7 +66,7 @@ PYTHON := python3
 #---------------------------------------------------------------------------------
 ARCH	:=	-marm -mno-thumb-interwork
 
-CFLAGS	:=	-g -Wall -Werror -Wno-error=strict-aliasing $(OPT_LEVEL) $(RELEASE_CONFIG) $(SP_EFFECT_COMPAT) \
+CFLAGS	:=	-g -Wall -Werror -Wno-error=strict-aliasing -Wno-error=unused-function $(OPT_LEVEL) $(RELEASE_CONFIG) $(SP_EFFECT_COMPAT) \
  			-march=armv5te -mtune=arm946e-s -fomit-frame-pointer -fno-short-enums \
 			-ffast-math -flto \
 			$(ARCH)

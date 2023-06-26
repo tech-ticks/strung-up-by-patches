@@ -82,3 +82,5 @@ struct advanced_menu_layout {
   uint8_t frame_type;
   undefined* unknown_c;
 };
+
+undefined* SetupDBoxFormat(struct advanced_menu_layout* layout, undefined unk);

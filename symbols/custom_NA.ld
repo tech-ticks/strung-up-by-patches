@@ -7,11 +7,15 @@ InitTeamMemberDataBasedOnLevel = 0x020544C8;
 ApplyPartyChange = 0x2057464;
 AddIndexedSlot = 0x2056554;
 
+SetupDBoxFormat = 0x2027648; /* Sets the textbox format up */
+
 /* Workaround for "undefined reference to 'memset'" */
 memset = 0x2087308;
 memcpy = 0x208729C;
 
 GBA_JOYPAD_KEYS = 0x4000130;
+
+GetColorCodePaletteOffset = 0x20265C4;
 
 /* !file overlay10 */
 GetTrapAnimationCallSite = 0x022bec40;
@@ -68,10 +72,15 @@ SpawnStairsCallsite = 0x2340e34;
 TrapTeamCheck = 0x02305790;
 TransformFixedRoomCheck = 0x232b458;
 DoMoveTransform = 0x232b44c;
+DoMovePounce = 0x232ca4c;
 GetMonsterIdFromSpawnEntryCallsite = 0x23172cc;
 RestoreMovePPOnFaint1 = 0x2309ef8;
 RestoreMovePPOnFaint2 = 0x0230a1c8;
 RestoreMovePPOnFaint3 = 0x230a410;
+WrapTrapTryWarpCall = 0x22ef278;
+
+/* !file overlay31 */
+QuicksaveQuestion = 0x023888d0;
 
 /* * !file overlay36 */
 IsKeyLost = 0x023dd29c;

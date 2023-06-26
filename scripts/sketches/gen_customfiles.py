@@ -165,7 +165,7 @@ npc_data = [
         "floor": 5,
         "npc_type": NPC_TYPE_PUSH_TO_POKEMON,
         "parameter1": 0,
-        "parameter2": 0
+        "parameter2": 538 # Doll
     },
 ]
 

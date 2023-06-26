@@ -114,6 +114,9 @@ DoMoveTransform+0:
 GetMonsterIdFromSpawnEntryCallsite+0:
   bl GetTransformMonsterId
 
+WrapTrapTryWarpCall+0:
+  bl CustomWarpTrap
+
 // Disable PP restoration when fainting (Tiny Reviver Seed)
 RestoreMovePPOnFaint1+0:
   mov r0, r0 // nop
@@ -121,6 +124,22 @@ RestoreMovePPOnFaint2+0:
   mov r0, r0 // nop
 RestoreMovePPOnFaint3+0:
   mov r0, r0 // nop
+
+SpawnMonster+0:
+  b HookSpawnMonster
+
+SetupDBoxFormat+0:
+  b HookSetupDBoxFormat
+
+GetColorCodePaletteOffset+0:
+  b CustomGetColorCodePaletteOffset
+
+DoMovePounce+0:
+  b CustomDoMovePounce
+
+// Disable quick saving
+QuicksaveQuestion+0:
+  bl ShowQuicksaveMessage
 
 // Make it so that all traps affect everyone
 TrapTeamCheck+0:
