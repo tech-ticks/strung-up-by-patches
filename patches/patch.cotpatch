@@ -1,6 +1,14 @@
 SaveFileIdentifier+0:
   .ascii "STRUNG_SKETCH"
 
+// Ignore `SaveFileIdentifier` for backwards compatibility.
+// Replacing the code with a custom function that checks for either
+// "STRUNG_SKETCH" or "POKE_DUN_SORA" would be a lot cleaner,
+// but this function is called before overlay36 is loaded 💀
+CheckStringSave+0:
+  mov r0, 1
+  bx lr
+
 RunLeaderTurnCallsite+0:
   bl CustomRunLeaderTurn
 
@@ -137,9 +145,19 @@ GetColorCodePaletteOffset+0:
 DoMovePounce+0:
   b CustomDoMovePounce
 
-// Disable quick saving
 QuicksaveQuestion+0:
   bl ShowQuicksaveMessage
+
+MoveLoggingRelated+0:
+  b HookMoveLoggingRelated
+
+PlayRockSmashAnimationCallsite+0:
+  bl CustomPlayRockSmashAnimation
+
+// Disable the check if the tile a Pokémon "talks to" can be attacked.
+// Allows talking to Amber while they're in a wall.
+TalkToTeammateCanAttackInDirectionCheck+0:
+  mov r0, 1
 
 // Make it so that all traps affect everyone
 TrapTeamCheck+0:

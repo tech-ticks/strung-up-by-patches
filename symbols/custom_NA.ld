@@ -79,6 +79,11 @@ RestoreMovePPOnFaint2 = 0x0230a1c8;
 RestoreMovePPOnFaint3 = 0x230a410;
 WrapTrapTryWarpCall = 0x22ef278;
 
+MoveLoggingRelated = 0x2322ddc;
+PlayRockSmashAnimation = 0x022e66c4;
+PlayRockSmashAnimationCallsite = 0x2337c98;
+TalkToTeammateCanAttackInDirectionCheck = 0x22f87d0;
+
 /* !file overlay31 */
 QuicksaveQuestion = 0x023888d0;
 

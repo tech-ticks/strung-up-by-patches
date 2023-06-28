@@ -109,6 +109,89 @@ static void CheckUsedMoveForNpc(void) {
   }
 }
 
+static void WarpAbra(struct entity* entity, struct monster* monster, struct entity* litwick) {
+  WaitFrames(30);
+  EndNegativeStatusCondition(entity, entity, false, false, true);
+  LogMessage(entity, "[CS:G]Abra[CR] used [CS:K]Teleport[CR]!", true);
+  WaitFrames(30);
+  TryWarp(entity, entity, WARP_RANDOM, NULL);
+
+  enum direction_id dir = GetDirectionTowardsPosition(&litwick->pos, &entity->pos);
+  litwick->graphical_direction.val = dir;
+  litwick->graphical_direction_mirror0.val = dir;
+  litwick->graphical_direction_mirror1.val = dir;
+
+  struct monster* litwick_monster = litwick->info;
+  PlayEffectAnimationEntitySimple(litwick, 91);
+  struct portrait_box portrait_box;
+  InitPortraitData(&portrait_box, litwick_monster->id.val, 12);
+  PrintDialogue(NULL, &portrait_box, "[CS:G]Abra[CR],[W:10] nooooooooo[VS:2:0]ooooooooooooo![VR][W:10]\nWhere did you go?[W:15]\n[FACE:7]You can't just leave me like this!", true);
+  
+  // Turn Abra back into an enemy
+  if (!monster->is_team_leader) { // but not Smeargle transformed into Abra
+    monster->statuses.monster_behavior.val = BEHAVIOR_NORMAL_ENEMY_0x0;
+    monster->joined_at.val = 0;
+    monster->is_ally = false;
+  }
+}
+
+static void CheckWantedPokemonAdjacent(struct entity* entity, struct monster* monster) {
+  // Ensure that the leader is somewhat close so that quests aren't completed by chance off-screen
+  struct entity* leader = GetLeader();
+  if (!EntityIsValid(leader) || GetChebyshevDistance(&entity->pos, &leader->pos) > 6) {
+    return;
+  }
+
+  struct dungeon_npc_entry* entry = FindDungeonNpcEntry(monster->id.val);
+  if (entry != NULL && entry->npc_type == NPC_TYPE_PUSH_TO_POKEMON) {
+    for (int i = 0; i < 20; i++) {
+      struct entity* other_entity = DUNGEON_PTR->entity_table.header.active_monster_ptrs[i];
+      if (!EntityIsValid(other_entity)) {
+        continue;
+      }
+
+      struct monster* other_monster = other_entity->info;
+
+      // The monster ID might be changed to the female form
+      int other_monster_id = FemaleToMaleForm(other_monster->apparent_id.val);
+      if (AreEntitiesAdjacent(entity, other_entity)
+          && other_monster_id == entry->parameter2
+          && HasMonsterBeenAttackedInDungeons(other_monster_id)) {
+        ClearNPCQuest(entry, entity, true);
+        if (monster->is_not_team_member) {
+          if (!other_monster->is_team_leader) {
+            other_monster->statuses.monster_behavior.val = BEHAVIOR_SECRET_BAZAAR_KIRLIA;
+            other_monster->joined_at.val = DUNGEON_JOINED_AT_BIDOOF;
+            other_monster->is_ally = true;
+          }
+
+          // Abra go warp
+          if (FemaleToMaleForm(other_monster_id) == MONSTER_ABRA) {
+            WarpAbra(other_entity, other_monster, entity);
+            return;
+          }
+        }
+      }
+    }
+  }
+}
+
+static void CheckPushToPokemonQuestCompletion(void) {
+  for (int i = 0; i < 20; i++) {
+    struct entity* entity = DUNGEON_PTR->entity_table.header.active_monster_ptrs[i];
+    if (!EntityIsValid(entity)) {
+      continue;
+    }
+
+    struct monster* monster = entity->info;
+      if (monster->statuses.monster_behavior.val == BEHAVIOR_ALLY) {
+      // If the NPC wants to be pushed to a Pokémon, check if they're adjacent
+      // to a monster with the correct ID
+      CheckWantedPokemonAdjacent(entity, monster);
+    }
+  }
+}
+
 // If the stairs in the opposite direction could not be spawned,
 // show a menu to select whether to go up or down.
 bool __attribute__((used)) CustomRunLeaderTurn(bool is_first_loop) {
@@ -229,6 +312,7 @@ bool __attribute__((used)) CustomRunLeaderTurn(bool is_first_loop) {
 
   bool result = RunLeaderTurn(is_first_loop);
   CheckUsedMoveForNpc();
+  CheckPushToPokemonQuestCompletion();
   return result;
 }
 
@@ -288,75 +372,14 @@ static void RunMonsterAiRockSmash(struct entity* entity, struct monster* monster
   return RunMonsterAi(entity, param_2);
 }
 
-static void WarpAbra(struct entity* entity, struct monster* monster, struct entity* litwick) {
-  WaitFrames(30);
-  EndNegativeStatusCondition(entity, entity, false, false, true);
-  LogMessage(entity, "[CS:G]Abra[CR] used [CS:K]Teleport[CR]!", true);
-  WaitFrames(30);
-  TryWarp(entity, entity, WARP_RANDOM, NULL);
-
-  enum direction_id dir = GetDirectionTowardsPosition(&litwick->pos, &entity->pos);
-  litwick->graphical_direction.val = dir;
-  litwick->graphical_direction_mirror0.val = dir;
-  litwick->graphical_direction_mirror1.val = dir;
-
-  struct monster* litwick_monster = litwick->info;
-  PlayEffectAnimationEntitySimple(litwick, 91);
-  struct portrait_box portrait_box;
-  InitPortraitData(&portrait_box, litwick_monster->id.val, 12);
-  PrintDialogue(NULL, &portrait_box, "[CS:G]Abra[CR],[W:10] nooooooooo[VS:2:0]ooooooooooooo![VR][W:10]\nWhere did you go?[W:15]\n[FACE:7]You can't just leave me like this!", true);
-  
-  // Turn Abra back into an enemy
-  monster->statuses.monster_behavior.val = BEHAVIOR_NORMAL_ENEMY_0x0;
-  monster->joined_at.val = 0;
-  monster->is_ally = false;
-}
-
-static void CheckWantedPokemonAdjacent(struct entity* entity, struct monster* monster) {
-  // Ensure that the leader is somewhat close so that quests aren't completed by chance off-screen
-  struct entity* leader = GetLeader();
-  if (!EntityIsValid(leader) || GetChebyshevDistance(&entity->pos, &leader->pos) > 6) {
-    return;
-  }
-
-  struct dungeon_npc_entry* entry = FindDungeonNpcEntry(monster->id.val);
-  if (entry != NULL && entry->npc_type == NPC_TYPE_PUSH_TO_POKEMON) {
-    for (int i = 0; i < 20; i++) {
-      struct entity* other_entity = DUNGEON_PTR->entity_table.header.active_monster_ptrs[i];
-      if (!EntityIsValid(other_entity)) {
-        continue;
-      }
-
-      struct monster* other_monster = other_entity->info;
-
-      // The monster ID might be changed to the female form
-      int other_monster_id = FemaleToMaleForm(other_monster->apparent_id.val);
-      if (AreEntitiesAdjacent(entity, other_entity)
-          && other_monster_id == entry->parameter2
-          && HasMonsterBeenAttackedInDungeons(other_monster_id)) {
-        ClearNPCQuest(entry, entity, true);
-        if (monster->is_not_team_member) {
-          other_monster->statuses.monster_behavior.val = BEHAVIOR_SECRET_BAZAAR_KIRLIA;
-          other_monster->joined_at.val = DUNGEON_JOINED_AT_BIDOOF;
-          other_monster->is_ally = true;
-
-          // Abra go warp
-          if (FemaleToMaleForm(other_monster_id) == MONSTER_ABRA) {
-            WarpAbra(other_entity, other_monster, entity);
-            return;
-          }
-        }
-      }
-    }
-  }
-}
-
 void __attribute__((used)) CustomRunMonsterAi(struct entity* entity, undefined param_2) {  
   if (!IsMonster(entity)) {
     return RunMonsterAi(entity, param_2);
   }
 
   struct monster* monster = entity->info;
+
+  CheckPushToPokemonQuestCompletion();
 
   if (monster->statuses.monster_behavior.val == BEHAVIOR_SECRET_BAZAAR_KIRLIA) {
     // For some reason, NPCs with the Kirlia behavior start moving back and forth after
@@ -389,13 +412,6 @@ void __attribute__((used)) CustomRunMonsterAi(struct entity* entity, undefined p
     }
 
     return;
-  }
-  
-  if (monster->statuses.monster_behavior.val == BEHAVIOR_ALLY) {
-    // If the NPC wants to be pushed to a Pokémon, check if they're adjacent
-    // to a monster with the correct ID
-    CheckWantedPokemonAdjacent(entity, monster);
-    return RunMonsterAi(entity, param_2);
   }
 
   if (monster->tactic.val == TACTIC_GROUP_SAFETY) { // You'll always find me
@@ -702,7 +718,8 @@ void __attribute__((used)) CustomMarkNonEnemySpawns(struct floor_properties* flo
 void __attribute__((used)) CustomRunDungeon(struct dungeon_init* dungeon_init_data, struct dungeon* dungeon) {
   GoneBackToPreviousFloor = false;
 
-  LoadDungeonNpcs(dungeon_init_data->id.val);
+  LoadDungeonNpcs();
+  
   RunDungeon(dungeon_init_data, dungeon);
 }
 
@@ -871,10 +888,35 @@ void __attribute__((used)) CustomWarpTrap(struct entity* user, struct entity* ta
   }
 }
 
-bool __attribute__((used)) ShowQuicksaveMessage() {
-  PrintDialogue(NULL, NULL, "Quicksaving is not supported in this game.", true);
-  HideMinimap();
-  return false;
+int __attribute__((used)) ShowQuicksaveMessage(undefined param_1, int message_id, int default_option, undefined param_4) {
+  return YesNoMenu(param_1, message_id, default_option, param_4); // Original function call
+
+  // Show a message when the player tries to quicksave (unused in the updated version)
+  // PrintDialogue(NULL, NULL, "Quicksaving is not supported in this game.", true);
+  // HideMinimap();
+  // return false;
+}
+
+uint8_t __attribute__((naked)) TrampolineCallOriginalMoveLoggingRelated(struct entity* entity, struct move* move, char* maybe_move_name, uint32_t param_4, int param_5, uint8_t param_6) {
+  asm("stmdb  sp!,{r3,r4,r5,r6,r7,r8,r9,r10,r11,lr}"); // Replaced instruction
+  asm("b MoveLoggingRelated+4");
+}
+
+uint8_t __attribute__((used)) HookMoveLoggingRelated(struct entity* entity, struct move* move, char* maybe_move_name, uint32_t param_4, int param_5, uint8_t param_6)
+{
+  if (move != NULL && move->id.val == MOVE_ROCK_SMASH
+      && GetChebyshevDistance(&entity->pos, &DUNGEON_PTR->display_data.camera_pos) > 5) {
+    return 0; // Don't log Rock Smash if the camera is too far away
+  }
+  return TrampolineCallOriginalMoveLoggingRelated(entity, move, maybe_move_name, param_4, param_5, param_6);
+}
+
+int __attribute__((used)) CustomPlayRockSmashAnimation(struct position* pos) {
+  // Play the Rock Smash animation only if the camera is close enough
+  if (GetChebyshevDistance(pos, &DUNGEON_PTR->display_data.camera_pos) <= 5) {
+    return PlayRockSmashAnimation(pos);
+  }
+  return 0;
 }
 
 // Same as the original function

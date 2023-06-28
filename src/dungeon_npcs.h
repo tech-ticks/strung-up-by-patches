@@ -25,7 +25,7 @@ struct dungeon_npc_entry {
 extern struct dungeon_npc_entry DUNGEON_NPCS[MAX_DUNGEON_NPCS];
 
 // Load dungeon NPC data for the given dungeon from `SKETCHES/dunnpcs.bin`
-void LoadDungeonNpcs(enum dungeon_id dungeon_id);
+void LoadDungeonNpcs();
 
 // Get the dungeon NPC entry for the given monster ID on the current floor
 struct dungeon_npc_entry* FindDungeonNpcEntry(uint16_t monster_id);

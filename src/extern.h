@@ -21,6 +21,8 @@ void FUN_022fb538(struct entity* entity); // unknown
 void FUN_0234b010(undefined param_1);
 void PlayEffectAnimationEntitySimple(struct entity* entity, int effect_id);
 int TargetingCheckFunction(struct entity* user, struct entity* target, int param_3, int param_4);
+uint8_t MoveLoggingRelated(struct entity* entity, struct move* move, char* maybe_move_name, uint32_t param_4, int param_5, uint8_t param_6);
+int PlayRockSmashAnimation(struct position* pos);
 
 // From a custom ASM patch
 bool IsKeyLost(int key_id);
