@@ -156,8 +156,15 @@ PlayRockSmashAnimationCallsite+0:
 
 // Disable the check if the tile a Pokémon "talks to" can be attacked.
 // Allows talking to Amber while they're in a wall.
-TalkToTeammateCanAttackInDirectionCheck+0:
-  mov r0, 1
+CanAttackInDirectionCallsite+0:
+  bl CanAttackInDirection // Original instruction
+  // mov r0, 1 // Old broken patch
+
+GetTargetableMonsterInFacingDirectionCallsite1+0:
+  bl CustomGetTargetableMonsterInFacingDirection
+
+GetTargetableMonsterInFacingDirectionCallsite2+0:
+  bl CustomGetTargetableMonsterInFacingDirection
 
 // Make it so that all traps affect everyone
 TrapTeamCheck+0:

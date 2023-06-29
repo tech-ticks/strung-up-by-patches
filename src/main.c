@@ -919,6 +919,26 @@ int __attribute__((used)) CustomPlayRockSmashAnimation(struct position* pos) {
   return 0;
 }
 
+// Similar to the original function, but it allows talking to
+// Amber while they're inside a wall.
+struct entity* __attribute__((used)) CustomGetTargetableMonsterInFacingDirection(struct entity* entity) {
+  struct monster* monster = entity->info;
+  enum direction_id direction = monster->action.direction.val;
+
+  struct tile* tile = GetTile(entity->pos.x + DIRECTIONS_XY[direction][0],
+                              entity->pos.y + DIRECTIONS_XY[direction][1]);
+
+  // The original function checks if the monster on the tile actually has the type
+  // ENTITY_MONSTER, which seems redundant but let's keep it anyway to be safe.
+  if (tile != NULL && IsMonster(tile->monster)) {
+    struct monster* target_monster = tile->monster->info;
+    if (CanAttackInDirection(entity, direction) || target_monster->joined_at.val == DUNGEON_BEACH /* Remember Place (Amber) */) {
+      return tile->monster;
+    }
+  }
+  return NULL;
+}
+
 // Same as the original function
 static int GetColorCodePaletteOffsetOriginal(int index) {
   switch(index) {

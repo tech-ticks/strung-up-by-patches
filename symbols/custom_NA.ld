@@ -82,8 +82,10 @@ WrapTrapTryWarpCall = 0x22ef278;
 MoveLoggingRelated = 0x2322ddc;
 PlayRockSmashAnimation = 0x022e66c4;
 PlayRockSmashAnimationCallsite = 0x2337c98;
-TalkToTeammateCanAttackInDirectionCheck = 0x22f87d0;
-
+CanAttackInDirectionCallsite = 0x22f87d0;
+GetTargetableMonsterInFacingDirection = 0x22f87c0;
+GetTargetableMonsterInFacingDirectionCallsite1 = 0x22f59cc; /* This call site is used when trying to talk to a Pokémon */
+GetTargetableMonsterInFacingDirectionCallsite2 = 0x22f37dc; /* Used before the other callsite to check if the action ID should be set to ACTION_TALK_FIELD. */
 /* !file overlay31 */
 QuicksaveQuestion = 0x023888d0;
 
